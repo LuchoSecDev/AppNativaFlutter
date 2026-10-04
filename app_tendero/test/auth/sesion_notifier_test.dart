@@ -112,6 +112,17 @@ void main() {
       expect(fin.info!.nombres, 'Carlos Pérez');
     });
 
+    test('un segundo toque mientras espera al servidor NO envía otro login (evita un 409 provocado por uno mismo)', () async {
+      await arrancarSinSesion();
+      servidor.programar('POST', '/api/login', RespuestaFalsa.deEjemplo('02_S2_login_ok'));
+      servidor.programar('GET', '/api/session-info', RespuestaFalsa.deEjemplo('05_S4_session_info'));
+      final primero = sesion().iniciarSesion('a', 'b');
+      final segundo = sesion().iniciarSesion('a', 'b'); // sin esperar: simula el doble toque
+      await Future.wait([primero, segundo]);
+      expect(servidor.veces('POST', '/api/login'), 1);
+      expect(contenedor.read(sesionProvider).fase, FaseSesion.activa);
+    });
+
     test('clave incorrecta: se queda en «sinSesion» con el mensaje del servidor', () async {
       await arrancarSinSesion();
       servidor.programar('POST', '/api/login', RespuestaFalsa.deEjemplo('01_S2_login_clave_incorrecta'));
