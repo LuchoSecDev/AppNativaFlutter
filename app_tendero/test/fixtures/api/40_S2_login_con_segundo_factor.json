@@ -1,0 +1,27 @@
+{
+  "descripcion": "Login de una cuenta con 2FA: todavía NO hay sesión; falta el código de 6 dígitos.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/login",
+    "headers": {
+      "Accept": "application/json",
+      "X-Canal": "app",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "login": "dueno_ejemplo",
+      "password": "<contraseña>"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "require2FA": true,
+      "message": "Se requiere código de verificación 2FA"
+    }
+  }
+}

@@ -6,11 +6,19 @@ import 'package:dio/dio.dart';
 
 /// Una respuesta que el servidor falso devolverá.
 class RespuestaFalsa {
-  const RespuestaFalsa(this.estado, this.cuerpo, {this.headers = const {}});
+  const RespuestaFalsa(this.estado, this.cuerpo, {this.headers = const {}}) : errorDeRed = null;
+
+  /// Simula que NO se pudo llegar al servidor (sin internet, tiempo agotado...).
+  const RespuestaFalsa.falloDeRed(DioExceptionType tipo)
+      : estado = 0,
+        cuerpo = null,
+        headers = const {},
+        errorDeRed = tipo;
 
   final int estado;
   final Object? cuerpo;
   final Map<String, List<String>> headers;
+  final DioExceptionType? errorDeRed;
 
   /// Carga una respuesta desde un ejemplo REAL del backend (carpeta `test/fixtures/api`). Esos archivos son
   /// copias de `docs/ejemplos_app_tendero/` del repositorio del backend: si la API cambia, hay que volver a
@@ -25,11 +33,14 @@ class RespuestaFalsa {
 /// Lo que se pidió, ya copiado (Dio reutiliza el objeto de la petición al reintentar, y aquí se quiere ver
 /// cada intento tal como salió).
 class PeticionRegistrada {
-  PeticionRegistrada(this.metodo, this.ruta, this.headers);
+  PeticionRegistrada(this.metodo, this.ruta, this.headers, this.cuerpo);
 
   final String metodo;
   final String ruta;
   final Map<String, dynamic> headers;
+
+  /// El cuerpo JSON que se envió (null si no llevaba).
+  final dynamic cuerpo;
 
   String get clave => '$metodo $ruta';
 }
@@ -55,7 +66,7 @@ class ServidorFalso implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    final registro = PeticionRegistrada(options.method, options.uri.path, Map<String, dynamic>.of(options.headers));
+    final registro = PeticionRegistrada(options.method, options.uri.path, Map<String, dynamic>.of(options.headers), options.data);
     peticiones.add(registro);
 
     final cola = _colas[registro.clave];
@@ -63,6 +74,9 @@ class ServidorFalso implements HttpClientAdapter {
       throw StateError('El servidor falso no tiene respuesta programada para ${registro.clave}');
     }
     final respuesta = cola.length > 1 ? cola.removeAt(0) : cola.first;
+    if (respuesta.errorDeRed != null) {
+      throw DioException(requestOptions: options, type: respuesta.errorDeRed!, message: 'falla de red simulada');
+    }
     return ResponseBody.fromString(
       jsonEncode(respuesta.cuerpo),
       respuesta.estado,

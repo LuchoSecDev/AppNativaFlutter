@@ -1,0 +1,20 @@
+{
+  "descripcion": "Cierra la sesión y libera el candado de su canal.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/logout",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {}
+  },
+  "respuesta": {
+    "estado": 200,
+    "body": {
+      "success": true,
+      "message": "Sesión cerrada"
+    }
+  }
+}

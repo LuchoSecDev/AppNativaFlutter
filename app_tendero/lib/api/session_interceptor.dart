@@ -41,6 +41,11 @@ class SessionInterceptor extends Interceptor {
   static const _rutasDondeElUnauthorizedEsNormal = {'/api/login', '/api/2fa/verify'};
   static const _marcaDeReintento = 'csrfReintentado';
 
+  /// Marca para una petición cuyo 401 es esperable y NO significa «sesión caducada». Ejemplo: al abrir la app se
+  /// pregunta si todavía hay sesión; un 401 ahí solo quiere decir «no hay», y no debe disparar el aviso.
+  /// Uso: `Options(extra: {SessionInterceptor.sinAvisoDeCaducidad: true})`.
+  static const sinAvisoDeCaducidad = 'sinAvisoDeCaducidad';
+
   /// El token guardado. `?` significa «puede ser nulo»: al inicio no hay ninguno.
   String? _csrfToken;
 
@@ -114,7 +119,8 @@ class SessionInterceptor extends Interceptor {
     }
 
     // Regla 4: sesión caducada o reemplazada.
-    if (estado == 401 && !_rutasDondeElUnauthorizedEsNormal.contains(ruta)) {
+    final avisarSiCaduco = err.requestOptions.extra[sinAvisoDeCaducidad] != true;
+    if (estado == 401 && avisarSiCaduco && !_rutasDondeElUnauthorizedEsNormal.contains(ruta)) {
       _csrfToken = null;
       onSessionExpired?.call();
     }

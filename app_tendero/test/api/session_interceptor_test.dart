@@ -2,6 +2,7 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stockpilot/api/api_client.dart';
+import 'package:stockpilot/api/session_interceptor.dart';
 
 import '../support/fake_adapter.dart';
 
@@ -127,6 +128,15 @@ void main() {
       servidor.programar('GET', '/api/caja/sesion', RespuestaFalsa.deEjemplo('29_S6_sin_sesion_401'));
       await expectLater(dio.get<dynamic>('/api/caja/sesion'), throwsA(isA<DioException>()));
       expect(vecesQueCaduco, 1);
+    });
+
+    test('un 401 en una petición marcada con sinAvisoDeCaducidad (comprobación al abrir la app) NO avisa', () async {
+      servidor.programar('GET', '/api/session-info', RespuestaFalsa.deEjemplo('29_S6_sin_sesion_401'));
+      await expectLater(
+        dio.get<dynamic>('/api/session-info', options: Options(extra: {SessionInterceptor.sinAvisoDeCaducidad: true})),
+        throwsA(isA<DioException>()),
+      );
+      expect(vecesQueCaduco, 0);
     });
 
     test('un 401 en el login (clave incorrecta) NO se toma como sesión caducada', () async {

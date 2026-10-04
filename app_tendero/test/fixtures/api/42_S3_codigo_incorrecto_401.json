@@ -1,0 +1,25 @@
+{
+  "descripcion": "Código incorrecto: la sesión sigue \"a medias\" y se puede reintentar.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/2fa/verify",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "token": "123456"
+    }
+  },
+  "respuesta": {
+    "estado": 401,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "error": "Código inválido o ha expirado."
+    }
+  }
+}

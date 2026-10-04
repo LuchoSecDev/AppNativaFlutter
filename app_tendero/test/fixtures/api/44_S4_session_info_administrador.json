@@ -1,0 +1,28 @@
+{
+  "descripcion": "session-info de un Administrador con 2FA activo.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/session-info",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "userId": 1,
+      "tiendaId": 1,
+      "tiendaNombre": "Tienda La Esperanza",
+      "limiteEgresoTendero": "150000.00",
+      "rol": "Administrador",
+      "nombres": "Marta Gómez",
+      "cambioClaveForzoso": false,
+      "needs2FASetup": false,
+      "is2FAEnabled": true
+    }
+  }
+}
