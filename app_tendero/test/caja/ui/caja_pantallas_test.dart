@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stockpilot/api/api_client.dart';
 import 'package:stockpilot/auth/auth_providers.dart';
 import 'package:stockpilot/auth/ui/auth_gate.dart';
+import 'package:stockpilot/ui/reloj.dart';
 
 import '../../support/fake_adapter.dart';
 
@@ -21,6 +22,7 @@ void main() {
     WidgetTester tester,
     void Function(ServidorFalso s) programarCaja, {
     bool esperar = true,
+    DateTime? ahora,
   }) async {
     servidor = ServidorFalso();
     servidor.programar(
@@ -47,6 +49,11 @@ void main() {
         overrides: [
           dioProvider.overrideWithValue(dio),
           sesionCaducadaProvider.overrideWithValue(caducidad.stream),
+          // El reloj se fija: «hoy» o «ayer» dependen del día en que se mira. La caja del ejemplo se abrió el
+          // 4-oct-2026 a las 15:30 UTC; por defecto «ahora» es una hora después de esa apertura.
+          ahoraProvider.overrideWithValue(
+            ahora ?? DateTime.parse('2026-10-04T16:30:00.000Z').toLocal(),
+          ),
         ],
         child: const MaterialApp(home: AuthGate()),
       ),
@@ -91,7 +98,8 @@ void main() {
         await abrirInicio(tester, cajaAbierta);
         expect(find.text('Caja abierta'), findsOneWidget);
         expect(find.text(r'Efectivo inicial: $50.000'), findsOneWidget);
-        expect(find.textContaining('Abierta a las'), findsOneWidget);
+        expect(find.textContaining('Abierta hoy a las'), findsOneWidget);
+        expect(find.textContaining('día anterior'), findsNothing);
         expect(find.text('Abrir caja'), findsNothing);
         expect(botonVender(tester).onPressed, isNotNull);
         await tester.tap(find.text('Vender'));
@@ -100,6 +108,29 @@ void main() {
           find.text('La pantalla de venta llega en el siguiente paso.'),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'una caja que quedó abierta de un día anterior lo dice con la fecha y avisa que hay que cerrarla',
+      (tester) async {
+        // Tres días después de la apertura: es la caja «olvidada» que no debe leerse como la de hoy.
+        await abrirInicio(
+          tester,
+          cajaAbierta,
+          ahora: DateTime.parse('2026-10-07T16:30:00.000Z').toLocal(),
+        );
+        expect(find.text('Caja abierta'), findsOneWidget);
+        expect(find.textContaining('Abierta el 04/10 a las'), findsOneWidget);
+        expect(find.textContaining('Abierta hoy'), findsNothing);
+        expect(
+          find.textContaining('Esta caja se abrió en un día anterior'),
+          findsOneWidget,
+        );
+        expect(
+          botonVender(tester).onPressed,
+          isNotNull,
+        ); // el aviso no bloquea: lo decide la persona
       },
     );
 

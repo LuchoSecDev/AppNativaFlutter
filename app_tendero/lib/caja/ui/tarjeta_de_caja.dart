@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../ui/colores.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
+import '../../ui/reloj.dart';
 import '../caja_providers.dart';
 import 'abrir_caja_screen.dart';
 
@@ -15,6 +16,7 @@ class TarjetaDeCaja extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final caja = ref.watch(cajaProvider);
+    final ahora = ref.watch(ahoraProvider);
 
     return Card(
       color: Colors.white,
@@ -83,11 +85,24 @@ class TarjetaDeCaja extends ConsumerWidget {
                 'Efectivo inicial: ${formatoPesos(caja.sesion!.montoApertura)}',
                 style: const TextStyle(color: Colores.tinta),
               ),
-              if (horaLocal(caja.sesion!.fechaApertura) case final hora?)
+              if (descripcionDeFecha(caja.sesion!.fechaApertura, ahora: ahora)
+                  case final cuando?)
                 Text(
-                  'Abierta a las $hora',
+                  'Abierta $cuando',
                   style: const TextStyle(color: Colores.tinta),
                 ),
+              // Una caja que se quedó abierta de un día anterior descuadra el arqueo de hoy: se avisa para que
+              // se cierre (por ahora, desde la web) antes de empezar a vender.
+              if (esDeUnDiaAnterior(
+                caja.sesion!.fechaApertura,
+                ahora: ahora,
+              )) ...[
+                const SizedBox(height: 12),
+                const CuadroDeMensaje(
+                  'Esta caja se abrió en un día anterior. Ciérrala (por ahora, desde la web) antes de empezar el turno de hoy.',
+                  esError: false,
+                ),
+              ],
               if (caja.mensaje != null) ...[
                 const SizedBox(height: 12),
                 CuadroDeMensaje(caja.mensaje!, esError: false),

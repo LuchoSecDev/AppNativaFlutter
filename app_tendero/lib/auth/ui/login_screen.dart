@@ -214,7 +214,7 @@ class _PreguntaCerrarOtraSesion extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Esta cuenta ya tiene una sesión abierta en otro celular. Si continúas, esa sesión se cerrará.',
+            'Esta cuenta ya tiene una sesión abierta en la app: puede ser en otro celular o una anterior de este que no se cerró. Si continúas, esa sesión se cerrará.',
             style: TextStyle(color: Colores.aviso, fontSize: 14),
           ),
           const SizedBox(height: 8),
