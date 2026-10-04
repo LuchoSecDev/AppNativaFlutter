@@ -246,7 +246,9 @@ void main() {
       await tester.tap(find.text('Guardar contraseña'));
       await tester.pumpAndSettle();
       expect(find.text('Hola, Carlos Pérez'), findsOneWidget);
-      expect(servidor.peticiones.last.clave, 'GET /api/session-info');
+      // Tras guardar la contraseña se consulta la sesión (y recién entonces el inicio consulta la caja).
+      final orden = servidor.peticiones.map((p) => p.clave).toList();
+      expect(orden.indexOf('GET /api/session-info', orden.indexOf('PUT /api/perfil/first-password')), isNonNegative);
     });
 
     testWidgets('si el servidor la rechaza, muestra su mensaje y se queda en la pantalla', (tester) async {

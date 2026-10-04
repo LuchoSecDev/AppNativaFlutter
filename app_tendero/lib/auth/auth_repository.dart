@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../api/errores_de_api.dart';
 import '../api/session_interceptor.dart';
 import 'auth_models.dart';
 
@@ -20,54 +21,77 @@ class AuthRepository {
     bool forzar = false,
   }) async {
     try {
-      final r = await _dio.post<dynamic>('/api/login', data: {
-        'login': usuario,
-        'password': password,
-        if (forzar) 'force': true,
-      });
+      final r = await _dio.post<dynamic>(
+        '/api/login',
+        data: {
+          'login': usuario,
+          'password': password,
+          if (forzar) 'force': true,
+        },
+      );
       final cuerpo = _mapa(r.data);
       if (cuerpo['require2FA'] == true) return const LoginRequiere2FA();
       final user = cuerpo['user'];
-      if (user is Map<String, dynamic>) return LoginExitoso(UsuarioSesion.desdeJson(user));
-      throw const ErrorDeApi('El servidor respondió algo inesperado. Inténtalo de nuevo.');
+      if (user is Map<String, dynamic>) {
+        return LoginExitoso(UsuarioSesion.desdeJson(user));
+      }
+      throw const ErrorDeApi(respuestaInesperada);
     } on DioException catch (e) {
       final estado = e.response?.statusCode;
       final cuerpo = _mapaONulo(e.response?.data);
-      if (estado == 409 && cuerpo?['code'] == 'SESSION_ACTIVE') return const LoginSesionActiva();
-      if (estado == 400 || estado == 401 || estado == 429) {
-        return LoginRechazado(_mensajeDelServidor(cuerpo) ?? 'No se pudo iniciar sesión.');
+      if (estado == 409 && cuerpo?['code'] == 'SESSION_ACTIVE') {
+        return const LoginSesionActiva();
       }
-      throw ErrorDeApi(_mensajeDeFalla(e));
+      if (estado == 400 || estado == 401 || estado == 429) {
+        return LoginRechazado(
+          mensajeDelServidor(cuerpo) ?? 'No se pudo iniciar sesión.',
+        );
+      }
+      throw ErrorDeApi(mensajeDeFalla(e));
     }
   }
 
   /// [S3] `POST /api/2fa/verify`: completa el login con el código de 6 dígitos.
   Future<ResultadoVerificacion> verificarCodigo2FA(String codigo) async {
     try {
-      final r = await _dio.post<dynamic>('/api/2fa/verify', data: {'token': codigo});
+      final r = await _dio.post<dynamic>(
+        '/api/2fa/verify',
+        data: {'token': codigo},
+      );
       final user = _mapa(r.data)['user'];
-      if (user is Map<String, dynamic>) return VerificacionExitosa(UsuarioSesion.desdeJson(user));
-      throw const ErrorDeApi('El servidor respondió algo inesperado. Inténtalo de nuevo.');
+      if (user is Map<String, dynamic>) {
+        return VerificacionExitosa(UsuarioSesion.desdeJson(user));
+      }
+      throw const ErrorDeApi(respuestaInesperada);
     } on DioException catch (e) {
       final estado = e.response?.statusCode;
       if (estado == 400 || estado == 401 || estado == 429) {
-        return VerificacionRechazada(_mensajeDelServidor(_mapaONulo(e.response?.data)) ?? 'Código incorrecto.');
+        return VerificacionRechazada(
+          mensajeDelServidor(_mapaONulo(e.response?.data)) ??
+              'Código incorrecto.',
+        );
       }
-      throw ErrorDeApi(_mensajeDeFalla(e));
+      throw ErrorDeApi(mensajeDeFalla(e));
     }
   }
 
   /// [S7] `PUT /api/perfil/first-password`: la contraseña definitiva de una cuenta nueva.
   Future<ResultadoCambioClave> cambiarClaveInicial(String nuevaClave) async {
     try {
-      await _dio.put<dynamic>('/api/perfil/first-password', data: {'newPassword': nuevaClave});
+      await _dio.put<dynamic>(
+        '/api/perfil/first-password',
+        data: {'newPassword': nuevaClave},
+      );
       return const CambioClaveExitoso();
     } on DioException catch (e) {
       final estado = e.response?.statusCode;
       if (estado == 400) {
-        return CambioClaveRechazado(_mensajeDelServidor(_mapaONulo(e.response?.data)) ?? 'No se pudo cambiar la contraseña.');
+        return CambioClaveRechazado(
+          mensajeDelServidor(_mapaONulo(e.response?.data)) ??
+              'No se pudo cambiar la contraseña.',
+        );
       }
-      throw ErrorDeApi(_mensajeDeFalla(e));
+      throw ErrorDeApi(mensajeDeFalla(e));
     }
   }
 
@@ -77,7 +101,7 @@ class AuthRepository {
       final r = await _dio.get<dynamic>('/api/session-info');
       return InfoSesion.desdeJson(_mapa(r.data));
     } on DioException catch (e) {
-      throw ErrorDeApi(_mensajeDeFalla(e));
+      throw ErrorDeApi(mensajeDeFalla(e));
     }
   }
 
@@ -92,7 +116,7 @@ class AuthRepository {
       return InfoSesion.desdeJson(_mapa(r.data));
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) return null;
-      throw ErrorDeApi(_mensajeDeFalla(e));
+      throw ErrorDeApi(mensajeDeFalla(e));
     }
   }
 
@@ -112,8 +136,16 @@ class AuthRepository {
       final r = await _dio.get<dynamic>('/api/csrf-token');
       return ResultadoConexion(duracion: reloj.elapsed, estado: r.statusCode);
     } on DioException catch (e) {
-      if (e.response != null) return ResultadoConexion(duracion: reloj.elapsed, estado: e.response!.statusCode);
-      return ResultadoConexion(duracion: reloj.elapsed, error: _mensajeDeFalla(e));
+      if (e.response != null) {
+        return ResultadoConexion(
+          duracion: reloj.elapsed,
+          estado: e.response!.statusCode,
+        );
+      }
+      return ResultadoConexion(
+        duracion: reloj.elapsed,
+        error: mensajeDeFalla(e),
+      );
     }
   }
 
@@ -121,32 +153,10 @@ class AuthRepository {
 
   Map<String, dynamic> _mapa(dynamic datos) {
     final mapa = _mapaONulo(datos);
-    if (mapa == null) throw const ErrorDeApi('El servidor respondió algo inesperado. Inténtalo de nuevo.');
+    if (mapa == null) throw const ErrorDeApi(respuestaInesperada);
     return mapa;
   }
 
-  Map<String, dynamic>? _mapaONulo(dynamic datos) => datos is Map<String, dynamic> ? datos : null;
-
-  /// Los errores del servidor traen el texto en `error` (a veces en `message`).
-  String? _mensajeDelServidor(Map<String, dynamic>? cuerpo) {
-    final texto = cuerpo?['error'] ?? cuerpo?['message'];
-    return texto is String && texto.isNotEmpty ? texto : null;
-  }
-
-  /// Mensaje para el usuario según el tipo de falla de red o del servidor.
-  String _mensajeDeFalla(DioException e) {
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return 'El servidor tardó demasiado en responder. Si estaba dormido, espera un momento e inténtalo otra vez.';
-      case DioExceptionType.connectionError:
-        return 'No hay conexión con el servidor. Revisa tu internet.';
-      default:
-        break;
-    }
-    final estado = e.response?.statusCode ?? 0;
-    if (estado >= 500) return 'El servidor tuvo un problema. Inténtalo de nuevo en un momento.';
-    return 'No se pudo completar la operación. Inténtalo de nuevo.';
-  }
+  Map<String, dynamic>? _mapaONulo(dynamic datos) =>
+      datos is Map<String, dynamic> ? datos : null;
 }
