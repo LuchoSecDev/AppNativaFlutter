@@ -1,0 +1,3 @@
+# IDE: configuración local de cada persona (no se versiona)
+.idea/
+*.iml
