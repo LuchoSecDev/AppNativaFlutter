@@ -1,0 +1,31 @@
+{
+  "descripcion": "Código correcto: desde aquí la sesión es válida.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/2fa/verify",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "token": "123456"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "message": "Login completado exitosamente",
+      "user": {
+        "nombres": "Marta Gómez",
+        "rol": "Administrador",
+        "cambioClaveForzoso": false,
+        "needs2FASetup": false
+      }
+    }
+  }
+}

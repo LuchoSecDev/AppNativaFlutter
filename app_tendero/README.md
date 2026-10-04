@@ -3,7 +3,7 @@
 App nativa (Flutter, Android primero) para que el Tendero de una tienda de barrio venda, abra y cierre caja desde el celular. Se conecta a la API del backend de StockPilot.
 
 - **Identificador:** `com.lem.stockpilot` (`lem` son las iniciales del equipo fundador; no se cambia).
-- **Estado:** en construcción. Hoy solo existe la pantalla de prueba del escáner (paso 1). La guía de construcción define el orden de lo que sigue.
+- **Estado:** en construcción. Hay escáner de prueba (paso 1) y la sesión completa (paso 2): login, segundo factor, primer cambio de contraseña y cerrar sesión. La guía de construcción define el orden de lo que sigue.
 
 ## Documentación (vive en el repositorio del backend, `StockPilot`, carpeta `docs/`)
 - `guia_construccion_app.md`: por dónde empezar y cuándo se da cada paso por terminado.
@@ -15,10 +15,15 @@ App nativa (Flutter, Android primero) para que el Tendero de una tienda de barri
 ```bash
 cd app_tendero
 flutter pub get
-flutter run          # con un celular Android conectado (depuración USB)
-flutter test         # pruebas
+flutter run --dart-define=API_BASE_URL=https://<servidor>   # con un celular Android (USB o depuración inalámbrica)
+flutter test         # pruebas (no necesitan celular ni internet)
 flutter analyze      # análisis estático
 ```
+La dirección del servidor **no** va en el código: se entrega al ejecutar con `--dart-define`. Sin ella, la app muestra un aviso y solo deja probar el escáner.
+
+**Solo en modo depuración** (`flutter run`, nunca en una versión de entrega), la pantalla de login muestra el servidor al que apunta, un botón **«Probar conexión con el servidor»** (comprueba que la app llega, sin usar credenciales) y otro para **probar el escáner sin iniciar sesión**.
+
+Las credenciales de prueba se escriben en el login o se piden al responsable; **nunca** se guardan en el repositorio.
 La cámara solo se puede probar en un celular real. Versión de Flutter con la que se creó el proyecto: 3.47.x (Dart 3.13.x).
 
 ## Reglas del proyecto

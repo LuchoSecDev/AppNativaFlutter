@@ -1,0 +1,25 @@
+{
+  "descripcion": "Una escritura sin el token CSRF. Se distingue del 403 de rol por el campo \"code\".",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/caja/abrir",
+    "headers": {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "monto_apertura": 50000
+    }
+  },
+  "respuesta": {
+    "estado": 403,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "code": "CSRF_INVALID",
+      "error": "Token CSRF inválido o ausente. Pide uno nuevo en GET /api/csrf-token y reintenta."
+    }
+  }
+}

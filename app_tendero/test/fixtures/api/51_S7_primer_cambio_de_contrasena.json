@@ -1,0 +1,25 @@
+{
+  "descripcion": "Establece la contraseña definitiva. La sesión sigue abierta y cambioClaveForzoso pasa a false.",
+  "peticion": {
+    "metodo": "PUT",
+    "ruta": "/api/perfil/first-password",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "newPassword": "<contraseña nueva, mínimo 8 caracteres>"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "message": "Contraseña establecida exitosamente"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "descripcion": "Credenciales incorrectas: el mismo mensaje para usuario inexistente y clave mala.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/login",
+    "headers": {
+      "Accept": "application/json",
+      "X-Canal": "app",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "login": "tendero_ejemplo",
+      "password": "<contraseña>"
+    }
+  },
+  "respuesta": {
+    "estado": 401,
+    "body": {
+      "success": false,
+      "error": "Usuario/correo o contraseña incorrectos"
+    }
+  }
+}

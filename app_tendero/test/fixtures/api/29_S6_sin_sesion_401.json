@@ -1,0 +1,16 @@
+{
+  "descripcion": "Cualquier ruta protegida sin sesión (o con la sesión caducada). Requiere Accept: application/json; sin esa cabecera sería un 302.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/productos",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 401,
+    "body": {
+      "error": "No autenticado"
+    }
+  }
+}
