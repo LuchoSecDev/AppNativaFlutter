@@ -4,6 +4,10 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'scan_stabilizer.dart';
 
+/// Interruptor de la zona de lectura. `true`: el lector solo analiza lo que está dentro del recuadro.
+/// `false`: analiza toda la imagen de la cámara (el comportamiento anterior).
+const bool _usarVentanaDeEscaneo = true;
+
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
 
@@ -11,7 +15,8 @@ class ScannerScreen extends StatefulWidget {
   State<ScannerScreen> createState() => _ScannerScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProviderStateMixin {
+class _ScannerScreenState extends State<ScannerScreen>
+    with SingleTickerProviderStateMixin {
   final MobileScannerController cameraController = MobileScannerController(
     detectionSpeed: DetectionSpeed.normal,
     formats: const [
@@ -72,10 +77,6 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    // Definir el tamaño de la ventana de escaneo
-    final scanWindowWidth = MediaQuery.of(context).size.width * 0.75;
-    final scanWindowHeight = scanWindowWidth * 0.6; // Proporción rectangular para códigos de barras
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Prueba de Escáner'),
@@ -86,8 +87,12 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
               final torchState = state.torchState;
               return IconButton(
                 icon: Icon(
-                  torchState == TorchState.on ? Icons.flash_on : Icons.flash_off,
-                  color: torchState == TorchState.on ? Colors.yellow : Colors.grey,
+                  torchState == TorchState.on
+                      ? Icons.flash_on
+                      : Icons.flash_off,
+                  color: torchState == TorchState.on
+                      ? Colors.yellow
+                      : Colors.grey,
                 ),
                 iconSize: 28.0,
                 onPressed: () => cameraController.toggleTorch(),
@@ -100,7 +105,9 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
               final facing = state.cameraDirection;
               return IconButton(
                 icon: Icon(
-                  facing == CameraFacing.front ? Icons.camera_front : Icons.camera_rear,
+                  facing == CameraFacing.front
+                      ? Icons.camera_front
+                      : Icons.camera_rear,
                 ),
                 iconSize: 28.0,
                 onPressed: () => cameraController.switchCamera(),
@@ -113,103 +120,136 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         children: [
           Expanded(
             flex: 4,
-            child: Stack(
-              children: [
-                MobileScanner(
-                  controller: cameraController,
-                  onDetect: _onDetect,
-                  // Sin esto, si el usuario niega el permiso o la cámara falla, la pantalla queda vacía.
-                  errorBuilder: (context, error) => _CameraError(error: error),
-                ),
-                // Overlay oscuro con recorte central
-                ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                    Colors.black.withValues(alpha: 0.7),
-                    BlendMode.srcOut,
-                  ),
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.black,
-                          backgroundBlendMode: BlendMode.dstOut,
-                        ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // El recuadro que se dibuja y la zona que el lector realmente analiza salen del MISMO cálculo,
+                // sobre el tamaño de esta vista previa, para que siempre coincidan.
+                final scanWindowWidth = constraints.maxWidth * 0.75;
+                final scanWindowHeight =
+                    scanWindowWidth *
+                    0.6; // Proporción rectangular para códigos de barras
+                final scanWindow = Rect.fromCenter(
+                  center: constraints.biggest.center(Offset.zero),
+                  width: scanWindowWidth,
+                  height: scanWindowHeight,
+                );
+                return Stack(
+                  children: [
+                    MobileScanner(
+                      controller: cameraController,
+                      // Solo se leen los códigos dentro del recuadro (evita leer el del producto de al lado).
+                      // Si en las pruebas con celulares reales da problemas, poner _usarVentanaDeEscaneo en false.
+                      scanWindow: _usarVentanaDeEscaneo ? scanWindow : null,
+                      onDetect: _onDetect,
+                      // Sin esto, si el usuario niega el permiso o la cámara falla, la pantalla queda vacía.
+                      errorBuilder: (context, error) =>
+                          _CameraError(error: error),
+                    ),
+                    // Overlay oscuro con recorte central
+                    ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withValues(alpha: 0.7),
+                        BlendMode.srcOut,
                       ),
-                      Center(
-                        child: Container(
-                          width: scanWindowWidth,
-                          height: scanWindowHeight,
-                          decoration: BoxDecoration(
-                            color: Colors.black, // Este color se vuelve transparente por el BlendMode
-                            borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        children: [
+                          Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black,
+                              backgroundBlendMode: BlendMode.dstOut,
+                            ),
                           ),
-                        ),
+                          Center(
+                            child: Container(
+                              width: scanWindowWidth,
+                              height: scanWindowHeight,
+                              decoration: BoxDecoration(
+                                color: Colors.black, // Este color se vuelve transparente por el BlendMode
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                // Bordes del recuadro y línea animada
-                Center(
-                  child: SizedBox(
-                    width: scanWindowWidth,
-                    height: scanWindowHeight,
-                    child: Stack(
-                      children: [
-                        // Borde blanco
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white70, width: 2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        // Esquinas resaltadas (decoración visual extra)
-                        // Línea roja animada
-                        if (!isPaused)
-                          AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return Positioned(
-                                top: (_animationController.value * (scanWindowHeight - 4)) + 2,
-                                left: 0,
-                                right: 0,
-                                child: Container(
-                                  height: 2,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFD84A), // color-resaltador
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFFFFD84A).withValues(alpha: 0.5),
-                                        blurRadius: 4,
-                                        spreadRadius: 1,
-                                      )
-                                    ],
-                                  ),
+                    ),
+                    // Bordes del recuadro y línea animada
+                    Center(
+                      child: SizedBox(
+                        width: scanWindowWidth,
+                        height: scanWindowHeight,
+                        child: Stack(
+                          children: [
+                            // Borde blanco
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.white70,
+                                  width: 2,
                                 ),
-                              );
-                            },
-                          ),
-                      ],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            // Esquinas resaltadas (decoración visual extra)
+                            // Línea roja animada
+                            if (!isPaused)
+                              AnimatedBuilder(
+                                animation: _animationController,
+                                builder: (context, child) {
+                                  return Positioned(
+                                    top:
+                                        (_animationController.value *
+                                            (scanWindowHeight - 4)) +
+                                        2,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      height: 2,
+                                      decoration: BoxDecoration(
+                                        color: const Color(
+                                          0xFFFFD84A,
+                                        ), // color-resaltador
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFFFFD84A)
+                                                .withValues(alpha: 0.5),
+                                            blurRadius: 4,
+                                            spreadRadius: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                // Overlay de confirmación (Check verde)
-                if (isPaused)
-                  Container(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Color(0xFFDDF3E9), // color-exito-suave
-                      size: 80,
-                    ),
-                  ),
-              ],
+                    // Overlay de confirmación (Check verde)
+                    if (isPaused)
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.check_circle,
+                          color: Color(0xFFDDF3E9), // color-exito-suave
+                          size: 80,
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-            color: confirmedCode != null ? const Color(0xFF0B6B45) : const Color(0xFF14173F), // color-exito o color-tinta
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 20.0,
+            ),
+            color: confirmedCode != null
+                ? const Color(0xFF0B6B45)
+                : const Color(0xFF14173F), // color-exito o color-tinta
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -233,7 +273,10 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF0B6B45),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ],
