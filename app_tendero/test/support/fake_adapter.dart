@@ -47,11 +47,13 @@ class PeticionRegistrada {
 
 /// Sustituye la red por respuestas programadas, para probar sin servidor, sin internet y sin celular.
 ///
-/// Se programa una cola de respuestas por cada «MÉTODO ruta». Cada petición toma la siguiente; cuando la cola se
-/// agota, se repite la última.
+/// Se programa una cola de respuestas por cada «MÉTODO ruta». Cada petición gasta la siguiente respuesta; cuando
+/// ya no quedan por gastar, se repite la última. Se pueden seguir agregando respuestas a una ruta ya usada: se
+/// gastarán a continuación.
 class ServidorFalso implements HttpClientAdapter {
   final List<PeticionRegistrada> peticiones = [];
   final Map<String, List<RespuestaFalsa>> _colas = {};
+  final Map<String, int> _gastadas = {};
 
   void programar(String metodo, String ruta, RespuestaFalsa respuesta) {
     _colas.putIfAbsent('$metodo $ruta', () => []).add(respuesta);
@@ -73,7 +75,9 @@ class ServidorFalso implements HttpClientAdapter {
     if (cola == null || cola.isEmpty) {
       throw StateError('El servidor falso no tiene respuesta programada para ${registro.clave}');
     }
-    final respuesta = cola.length > 1 ? cola.removeAt(0) : cola.first;
+    final gastadas = _gastadas[registro.clave] ?? 0;
+    final respuesta = cola[gastadas < cola.length ? gastadas : cola.length - 1];
+    _gastadas[registro.clave] = gastadas + 1;
     if (respuesta.errorDeRed != null) {
       throw DioException(requestOptions: options, type: respuesta.errorDeRed!, message: 'falla de red simulada');
     }

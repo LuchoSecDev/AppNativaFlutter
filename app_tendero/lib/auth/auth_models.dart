@@ -38,6 +38,8 @@ class InfoSesion {
     required this.rol,
     required this.nombres,
     required this.is2FAEnabled,
+    required this.cambioClaveForzoso,
+    required this.needs2FASetup,
   });
 
   final int userId;
@@ -51,6 +53,10 @@ class InfoSesion {
   final String nombres;
   final bool is2FAEnabled;
 
+  /// Igual que en [UsuarioSesion]: sirve para reabrir la app y saber si la cuenta todavía debe cambiar su contraseña.
+  final bool cambioClaveForzoso;
+  final bool needs2FASetup;
+
   factory InfoSesion.desdeJson(Map<String, dynamic> json) => InfoSesion(
         userId: (json['userId'] as num?)?.toInt() ?? 0,
         tiendaId: (json['tiendaId'] as num?)?.toInt() ?? 0,
@@ -59,6 +65,8 @@ class InfoSesion {
         rol: json['rol'] as String? ?? '',
         nombres: json['nombres'] as String? ?? '',
         is2FAEnabled: json['is2FAEnabled'] == true,
+        cambioClaveForzoso: json['cambioClaveForzoso'] == true,
+        needs2FASetup: json['needs2FASetup'] == true,
       );
 }
 
