@@ -1,7 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
+import 'scan_stabilizer.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -25,10 +26,8 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   String? confirmedCode;
   bool isPaused = false;
 
-  // --- Estabilización ---
-  String? _candidateCode;
-  int _candidateCount = 0;
-  static const int _requiredReads = 3;
+  // --- Estabilización: confirma un código solo tras varias lecturas iguales seguidas ---
+  final ScanStabilizer _stabilizer = ScanStabilizer();
 
   // --- Animación ---
   late AnimationController _animationController;
@@ -51,17 +50,11 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     final code = barcodes.first.rawValue;
     if (code == null || code.isEmpty) return;
 
-    if (code == _candidateCode) {
-      _candidateCount++;
-    } else {
-      _candidateCode = code;
-      _candidateCount = 1;
-    }
-
-    if (_candidateCount >= _requiredReads && code != confirmedCode) {
+    final confirmed = _stabilizer.register(code);
+    if (confirmed != null) {
       HapticFeedback.mediumImpact();
       setState(() {
-        confirmedCode = code;
+        confirmedCode = confirmed;
         isPaused = true;
       });
       _animationController.stop();
@@ -69,11 +62,10 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   }
 
   void _resumeScanning() {
+    _stabilizer.reset();
     setState(() {
       isPaused = false;
       confirmedCode = null;
-      _candidateCode = null;
-      _candidateCount = 0;
     });
     _animationController.repeat(reverse: true);
   }
@@ -126,11 +118,13 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
                 MobileScanner(
                   controller: cameraController,
                   onDetect: _onDetect,
+                  // Sin esto, si el usuario niega el permiso o la cámara falla, la pantalla queda vacía.
+                  errorBuilder: (context, error) => _CameraError(error: error),
                 ),
                 // Overlay oscuro con recorte central
                 ColorFiltered(
                   colorFilter: ColorFilter.mode(
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withValues(alpha: 0.7),
                     BlendMode.srcOut,
                   ),
                   child: Stack(
@@ -184,7 +178,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
                                     color: const Color(0xFFFFD84A), // color-resaltador
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFFFFD84A).withOpacity(0.5),
+                                        color: const Color(0xFFFFD84A).withValues(alpha: 0.5),
                                         blurRadius: 4,
                                         spreadRadius: 1,
                                       )
@@ -201,7 +195,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
                 // Overlay de confirmación (Check verde)
                 if (isPaused)
                   Container(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     alignment: Alignment.center,
                     child: const Icon(
                       Icons.check_circle,
@@ -256,5 +250,45 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     _animationController.dispose();
     cameraController.dispose();
     super.dispose();
+  }
+}
+
+/// Mensaje que se muestra cuando la cámara no puede iniciarse (permiso denegado, sin cámara, etc.).
+class _CameraError extends StatelessWidget {
+  const _CameraError({required this.error});
+
+  final MobileScannerException error;
+
+  String get _message {
+    switch (error.errorCode) {
+      case MobileScannerErrorCode.permissionDenied:
+        return 'Falta el permiso de la cámara.\n'
+            'Actívalo en Ajustes > Aplicaciones > StockPilot > Permisos.';
+      case MobileScannerErrorCode.unsupported:
+        return 'Este dispositivo no tiene una cámara compatible con el escáner.';
+      default:
+        return 'No se pudo iniciar la cámara.\nCierra y vuelve a abrir la pantalla.';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF14173F), // color-tinta
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.no_photography, color: Colors.white70, size: 56),
+          const SizedBox(height: 16),
+          Text(
+            _message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ],
+      ),
+    );
   }
 }

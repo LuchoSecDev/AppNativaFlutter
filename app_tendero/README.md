@@ -1,17 +1,27 @@
-# stockpilot
+# StockPilot · App del Tendero
 
-A new Flutter project.
+App nativa (Flutter, Android primero) para que el Tendero de una tienda de barrio venda, abra y cierre caja desde el celular. Se conecta a la API del backend de StockPilot.
 
-## Getting Started
+- **Identificador:** `com.lem.stockpilot` (`lem` son las iniciales del equipo fundador; no se cambia).
+- **Estado:** en construcción. Hoy solo existe la pantalla de prueba del escáner (paso 1). La guía de construcción define el orden de lo que sigue.
 
-This project is a starting point for a Flutter application.
+## Documentación (vive en el repositorio del backend, `StockPilot`, carpeta `docs/`)
+- `guia_construccion_app.md`: por dónde empezar y cuándo se da cada paso por terminado.
+- `contrato_api_app_tendero.md`: la API que usa la app, endpoint por endpoint.
+- `ejemplos_app_tendero/`: peticiones y respuestas reales, para simular el servidor en las pruebas.
+- `propuesta_tecnica_app_flutter.md`: decisiones técnicas ya tomadas.
 
-A few resources to get you started if this is your first Flutter project:
+## Cómo ejecutarla
+```bash
+cd app_tendero
+flutter pub get
+flutter run          # con un celular Android conectado (depuración USB)
+flutter test         # pruebas
+flutter analyze      # análisis estático
+```
+La cámara solo se puede probar en un celular real. Versión de Flutter con la que se creó el proyecto: 3.47.x (Dart 3.13.x).
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Reglas del proyecto
+- **Este repositorio es público.** Nada de contraseñas, claves, cookies, llaves de firma (`*.jks`, `key.properties`) ni la URL del servidor de pruebas en el código; la URL va en configuración local fuera de Git.
+- **Trabaja en una ruta sin tildes ni espacios** (por ejemplo `C:\Estudio\AppNativaFlutter`): con una tilde en la ruta, el analizador de Flutter falla en Windows.
+- El estado se maneja con `flutter_riverpod`; los widgets no llaman al servidor directamente.
