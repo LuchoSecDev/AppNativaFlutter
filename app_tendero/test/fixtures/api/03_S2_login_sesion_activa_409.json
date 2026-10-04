@@ -1,0 +1,27 @@
+{
+  "descripcion": "Un segundo inicio de sesión del mismo Tendero en el mismo canal. Se puede repetir con \"force\": true para cerrar la otra sesión.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/login",
+    "headers": {
+      "Accept": "application/json",
+      "X-Canal": "app",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "login": "tendero_ejemplo",
+      "password": "<contraseña>"
+    }
+  },
+  "respuesta": {
+    "estado": 409,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "error": "Ya hay una sesión activa para este usuario en otro dispositivo.",
+      "code": "SESSION_ACTIVE"
+    }
+  }
+}

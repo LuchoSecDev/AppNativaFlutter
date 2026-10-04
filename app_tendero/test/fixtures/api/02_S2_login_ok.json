@@ -1,0 +1,32 @@
+{
+  "descripcion": "Inicio de sesión de un Tendero con X-Canal: app. Deja la cookie de sesión (connect.sid), que la app debe guardar y reenviar siempre.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/login",
+    "headers": {
+      "Accept": "application/json",
+      "X-Canal": "app",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "login": "tendero_ejemplo",
+      "password": "<contraseña>"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "message": "Login exitoso",
+      "user": {
+        "nombres": "Carlos Pérez",
+        "rol": "Tendero",
+        "cambioClaveForzoso": false,
+        "needs2FASetup": false
+      }
+    }
+  }
+}

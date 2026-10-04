@@ -1,0 +1,26 @@
+{
+  "descripcion": "Apertura de caja con el efectivo inicial.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/caja/abrir",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "monto_apertura": 50000
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "message": "Caja abierta exitosamente",
+      "id_sesion": 1
+    }
+  }
+}

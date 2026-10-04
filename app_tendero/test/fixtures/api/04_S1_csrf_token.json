@@ -1,0 +1,19 @@
+{
+  "descripcion": "Token CSRF de la sesión. Se pide DESPUÉS del login y va en X-CSRF-Token en toda escritura.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/csrf-token",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "csrfToken": "<token CSRF: 64 o más caracteres hexadecimales>"
+    }
+  }
+}
