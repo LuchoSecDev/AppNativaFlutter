@@ -1,0 +1,33 @@
+{
+  "descripcion": "Venta fiada que deja al cliente por encima de su cupo de crédito.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/registrar-venta-carrito",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Idempotency-Key": "44444444-aaaa-4bbb-8ccc-000000000004",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "items": [
+        {
+          "id_producto": 1,
+          "cantidad": 3
+        }
+      ],
+      "metodo_pago": "Fiado",
+      "id_cliente": 1
+    }
+  },
+  "respuesta": {
+    "estado": 400,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "error": "Esta venta supera el cupo de crédito del cliente (cupo $5.000, ya debe $0, esta venta $13.500)."
+    }
+  }
+}

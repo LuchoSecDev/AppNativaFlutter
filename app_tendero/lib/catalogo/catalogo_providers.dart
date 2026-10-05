@@ -65,8 +65,9 @@ class CatalogoNotifier extends Notifier<EstadoCatalogo> {
 
   bool _obsoleto(int generacion) => generacion != _generacion || !ref.mounted;
 
-  /// `true` mientras hay una descarga en curso: una segunda petición (un doble toque en «Reintentar») no lanza otra.
-  bool _enCurso = false;
+  /// La descarga en curso, si la hay: una segunda petición (un doble toque en «Reintentar») no lanza otra, sino que
+  /// espera a la misma y recibe su mismo resultado.
+  Future<bool>? _descargaEnCurso;
 
   @override
   EstadoCatalogo build() {
@@ -74,7 +75,7 @@ class CatalogoNotifier extends Notifier<EstadoCatalogo> {
     // solo, y no queda a la vista el de la tienda anterior.
     final fase = ref.watch(sesionProvider.select((e) => e.fase));
     _generacion++;
-    _enCurso = false;
+    _descargaEnCurso = null;
     if (fase == FaseSesion.activa) {
       Future.microtask(cargar);
     }
@@ -83,11 +84,12 @@ class CatalogoNotifier extends Notifier<EstadoCatalogo> {
 
   /// [C1] Descarga el catálogo. Si ya había una lista y la descarga falla, se CONSERVA la lista anterior con un aviso:
   /// un catálogo un poco viejo es mejor que ninguno cuando la señal es mala.
-  Future<void> cargar() async {
-    if (_enCurso) {
-      return;
-    }
-    _enCurso = true;
+  ///
+  /// Devuelve `true` si la lista quedó actualizada con lo que dice el servidor, y `false` si no se pudo (se conserva
+  /// la anterior). Antes de cobrar se usa para asegurarse de que los precios que se muestran son los vigentes.
+  Future<bool> cargar() => _descargaEnCurso ??= _descargar();
+
+  Future<bool> _descargar() async {
     final g = _generacion;
     final previos = state.productos;
     state = previos.isEmpty
@@ -96,12 +98,13 @@ class CatalogoNotifier extends Notifier<EstadoCatalogo> {
     try {
       final lista = await _repo.listar();
       if (_obsoleto(g)) {
-        return;
+        return false;
       }
       state = EstadoCatalogo.listo(lista);
+      return true;
     } on ErrorDeApi catch (e) {
       if (_obsoleto(g)) {
-        return;
+        return false;
       }
       state = previos.isEmpty
           ? EstadoCatalogo.error(e.mensaje)
@@ -109,9 +112,10 @@ class CatalogoNotifier extends Notifier<EstadoCatalogo> {
               previos,
               aviso: 'No se pudo actualizar la lista: ${e.mensaje}',
             );
+      return false;
     } finally {
       if (!_obsoleto(g)) {
-        _enCurso = false;
+        _descargaEnCurso = null;
       }
     }
   }

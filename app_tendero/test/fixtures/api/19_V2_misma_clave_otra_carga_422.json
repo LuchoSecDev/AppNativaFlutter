@@ -1,0 +1,33 @@
+{
+  "descripcion": "La misma clave con otra carga es un error de la app (reutilizó una clave): no se registra nada.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/registrar-venta-carrito",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Idempotency-Key": "4f9d2c1e-7a3b-4c58-9e10-5b6a8d0c1f22",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "items": [
+        {
+          "id_producto": 1,
+          "cantidad": 3
+        }
+      ],
+      "metodo_pago": "Efectivo"
+    }
+  },
+  "respuesta": {
+    "estado": 422,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "code": "IDEMPOTENCY_KEY_REUSED",
+      "error": "Esa Idempotency-Key ya se usó con una venta distinta. Genera una clave nueva para cada venta."
+    }
+  }
+}

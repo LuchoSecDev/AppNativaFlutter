@@ -13,6 +13,8 @@ import 'carrito/almacen_carrito.dart';
 import 'carrito/carrito_providers.dart';
 import 'config/app_config.dart';
 import 'scanner_screen.dart';
+import 'venta/almacen_venta.dart';
+import 'venta/venta_providers.dart';
 
 Future<void> main() async {
   // Necesario antes de usar cualquier función de Flutter que hable con el sistema (carpetas, cámara...) antes
@@ -36,7 +38,7 @@ Future<void> main() async {
     onSessionExpired: () => caducidad.add(null),
   );
 
-  // Almacenamiento local del celular, donde se guarda el carrito de la venta en curso.
+  // Almacenamiento local del celular, donde se guarda el carrito y la venta que se está cobrando.
   final preferencias = await SharedPreferences.getInstance();
 
   runApp(
@@ -48,6 +50,9 @@ Future<void> main() async {
         sesionCaducadaProvider.overrideWithValue(caducidad.stream),
         almacenCarritoProvider.overrideWithValue(
           AlmacenCarritoLocal(preferencias),
+        ),
+        almacenVentaPendienteProvider.overrideWithValue(
+          AlmacenVentaPendienteLocal(preferencias),
         ),
       ],
       child: const MyApp(),

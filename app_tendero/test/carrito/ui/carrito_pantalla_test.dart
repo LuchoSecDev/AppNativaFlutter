@@ -10,6 +10,7 @@ import 'package:stockpilot/carrito/ui/carrito_screen.dart';
 import 'package:stockpilot/catalogo/catalogo_providers.dart';
 import 'package:stockpilot/catalogo/producto.dart';
 import 'package:stockpilot/home_screen.dart';
+import 'package:stockpilot/venta/venta_providers.dart';
 
 import '../../support/carrito_apoyo.dart';
 
@@ -23,6 +24,12 @@ class _CajaAbiertaFija extends CajaNotifier {
       fechaApertura: '2026-10-04T15:30:00.000Z',
     ),
   );
+}
+
+/// Una caja cerrada fija: sin ella el carrito pediría la caja al servidor.
+class _CajaCerradaFija extends CajaNotifier {
+  @override
+  EstadoCaja build() => const EstadoCaja.cerrada();
 }
 
 void main() {
@@ -58,8 +65,12 @@ void main() {
             ),
           ),
           almacenCarritoProvider.overrideWithValue(almacen),
-          if (conCajaAbierta)
-            cajaProvider.overrideWith(() => _CajaAbiertaFija()),
+          almacenVentaPendienteProvider.overrideWithValue(
+            AlmacenVentaEnMemoria(),
+          ),
+          cajaProvider.overrideWith(
+            () => conCajaAbierta ? _CajaAbiertaFija() : _CajaCerradaFija(),
+          ),
         ],
         child: MaterialApp(home: pantalla),
       ),
@@ -306,7 +317,7 @@ void main() {
     );
 
     testWidgets(
-      '«Cobrar» sigue bloqueado: el cobro llega en el siguiente subpaso',
+      '«Cobrar en efectivo» está bloqueado sin caja abierta, y lo explica',
       (tester) async {
         await abrir(
           tester,
@@ -316,9 +327,49 @@ void main() {
           ],
         );
         final cobrar = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'Cobrar (próximamente)'),
+          find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
         );
         expect(cobrar.onPressed, isNull);
+        expect(find.text('Abre la caja para cobrar.'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '«Cobrar en efectivo» está bloqueado si hay productos con problemas',
+      (tester) async {
+        await abrir(
+          tester,
+          pantalla: const CarritoScreen(),
+          conCajaAbierta: true,
+          productos: [
+            producto(1, 'Arroz Diana 1Kg', precio: '4500.00', cantidad: 1),
+          ],
+          lineas: const [
+            LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 3),
+          ],
+        );
+        final cobrar = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
+        );
+        expect(cobrar.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      '«Cobrar en efectivo» se habilita con caja abierta y todo en orden',
+      (tester) async {
+        await abrir(
+          tester,
+          pantalla: const CarritoScreen(),
+          conCajaAbierta: true,
+          lineas: const [
+            LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 1),
+          ],
+        );
+        final cobrar = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
+        );
+        expect(cobrar.onPressed, isNotNull);
       },
     );
   });

@@ -11,6 +11,8 @@ import 'scanner_screen.dart';
 import 'ui/colores.dart';
 import 'ui/dinero.dart';
 import 'ui/formato.dart';
+import 'ui/piezas_de_pantalla.dart';
+import 'venta/venta_providers.dart';
 
 /// Pantalla de inicio una vez que hay sesión: quién entró, el estado de la caja y las acciones disponibles.
 class HomeScreen extends ConsumerWidget {
@@ -22,6 +24,7 @@ class HomeScreen extends ConsumerWidget {
     final info = estado.info;
     final puedeVender = ref.watch(puedeVenderProvider);
     final carrito = ref.watch(resumenCarritoProvider);
+    final cobro = ref.watch(cobroProvider);
 
     return Scaffold(
       backgroundColor: Colores.papel,
@@ -84,6 +87,13 @@ class HomeScreen extends ConsumerWidget {
                 'Carrito: ${carrito.unidades} ${carrito.unidades == 1 ? 'unidad' : 'unidades'} · ${formatoPesos(importeDeCentavos(carrito.totalCentavos))}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 13, color: Colores.tinta),
+              ),
+            ],
+            // Una venta de la que no se sabe si quedó registrada no se puede olvidar: se avisa desde el inicio.
+            if (cobro.fase == FaseCobro.sinConfirmar) ...[
+              const SizedBox(height: 8),
+              const CuadroDeMensaje(
+                'Hay una venta sin confirmar. Abre «Vender» para reintentarla; no la cobres otra vez.',
               ),
             ],
             const SizedBox(height: 16),

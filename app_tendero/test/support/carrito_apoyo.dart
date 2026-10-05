@@ -9,6 +9,9 @@ import 'package:stockpilot/carrito/carrito_models.dart';
 import 'package:stockpilot/carrito/carrito_providers.dart';
 import 'package:stockpilot/catalogo/catalogo_providers.dart';
 import 'package:stockpilot/catalogo/producto.dart';
+import 'package:stockpilot/venta/almacen_venta.dart';
+import 'package:stockpilot/venta/venta_models.dart';
+import 'package:stockpilot/venta/venta_providers.dart';
 
 /// Un almacén de carritos en memoria, con ganchos para simular fallas y lecturas lentas.
 class AlmacenEnMemoria implements AlmacenCarrito {
@@ -45,6 +48,38 @@ class AlmacenEnMemoria implements AlmacenCarrito {
     } else {
       datos[clave] = [...lineas];
     }
+  }
+}
+
+/// Un almacén de ventas pendientes en memoria, con un gancho para simular fallas del disco.
+class AlmacenVentaEnMemoria implements AlmacenVentaPendiente {
+  final Map<String, VentaPendiente> datos = {};
+
+  /// Si es `true`, leer, guardar y borrar fallan (disco lleno, permisos...).
+  bool fallar = false;
+
+  @override
+  Future<VentaPendiente?> leer(String clave) async {
+    if (fallar) {
+      throw Exception('fallo de lectura simulado');
+    }
+    return datos[clave];
+  }
+
+  @override
+  Future<void> guardar(String clave, VentaPendiente venta) async {
+    if (fallar) {
+      throw Exception('fallo de escritura simulado');
+    }
+    datos[clave] = venta;
+  }
+
+  @override
+  Future<void> borrar(String clave) async {
+    if (fallar) {
+      throw Exception('fallo de borrado simulado');
+    }
+    datos.remove(clave);
   }
 }
 
@@ -119,6 +154,7 @@ armarContenedor({
       sesionProvider.overrideWith(() => sesionFija),
       catalogoProvider.overrideWith(() => catalogoFijo),
       almacenCarritoProvider.overrideWithValue(almacen),
+      almacenVentaPendienteProvider.overrideWithValue(AlmacenVentaEnMemoria()),
     ],
   );
   // Los providers se crean al leerlos por primera vez; se encienden ya para que `poner` funcione desde el inicio.

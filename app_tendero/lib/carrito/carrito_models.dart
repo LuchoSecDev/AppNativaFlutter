@@ -139,4 +139,7 @@ enum ResultadoAgregar {
 
   /// El carrito todavía se está leyendo del almacenamiento del celular.
   cargando,
+
+  /// Hay un cobro en curso o sin confirmar: el carrito no se puede cambiar hasta resolverlo.
+  ventaEnCurso,
 }

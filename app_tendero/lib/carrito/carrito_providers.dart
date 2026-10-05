@@ -7,6 +7,7 @@ import '../auth/session_state.dart';
 import '../catalogo/catalogo_providers.dart';
 import '../catalogo/producto.dart';
 import '../ui/dinero.dart';
+import '../venta/venta_providers.dart';
 import 'almacen_carrito.dart';
 import 'carrito_models.dart';
 
@@ -92,6 +93,11 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
 
   bool _obsoleto(int generacion) => generacion != _generacion || !ref.mounted;
 
+  /// Mientras se cobra (o hay un cobro sin confirmar) el carrito no se toca: el reintento debe enviar exactamente lo
+  /// mismo que la primera vez. Se pregunta aquí, y no solo en las pantallas, para que ninguna entrada futura (el
+  /// escáner, por ejemplo) pueda cambiar un carrito que se está cobrando.
+  bool get _bloqueado => ref.read(cobroProvider).bloqueaElCarrito;
+
   @override
   EstadoCarrito build() {
     // Se vuelve a ejecutar cuando cambia la sesión (entrar, salir, caducar, cambiar de cuenta).
@@ -100,6 +106,9 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
     );
     final (fase, userId, tiendaId) = sesion;
     _generacion++;
+    // Enciende el cobro ya (los providers se crean al leerlos por primera vez): así su lectura del celular corre a la
+    // vez que la del carrito, y la primera acción no se encuentra con «todavía no sé si hay un cobro a medias».
+    ref.read(cobroProvider);
 
     if (fase == FaseSesion.activa && userId != null && tiendaId != null) {
       _clave = 'carrito_v1_${userId}_$tiendaId';
@@ -138,6 +147,9 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
     if (state.cargando || _clave == null) {
       return ResultadoAgregar.cargando;
     }
+    if (_bloqueado) {
+      return ResultadoAgregar.ventaEnCurso;
+    }
     if (!producto.estaDisponible) {
       return ResultadoAgregar.noDisponible;
     }
@@ -171,6 +183,9 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
 
   /// Suma una unidad a una línea del carrito. [ResultadoAgregar.limiteDeStock] si ya no hay más.
   ResultadoAgregar incrementar(int idProducto) {
+    if (_bloqueado) {
+      return ResultadoAgregar.ventaEnCurso;
+    }
     final lineas = [...state.lineas];
     final i = lineas.indexWhere((l) => l.idProducto == idProducto);
     if (i < 0) {
@@ -187,6 +202,9 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
 
   /// Resta una unidad. Con una sola unidad no hace nada: para sacar el producto está [quitar].
   void decrementar(int idProducto) {
+    if (_bloqueado) {
+      return;
+    }
     final lineas = [...state.lineas];
     final i = lineas.indexWhere((l) => l.idProducto == idProducto);
     if (i < 0 || lineas[i].cantidad <= 1) {
@@ -197,10 +215,18 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
   }
 
   void quitar(int idProducto) {
+    if (_bloqueado) {
+      return;
+    }
     _aplicar([...state.lineas.where((l) => l.idProducto != idProducto)]);
   }
 
-  void vaciar() => _aplicar(const []);
+  void vaciar() {
+    if (_bloqueado) {
+      return;
+    }
+    _aplicar(const []);
+  }
 
   // ───────────────────────── pasos internos ─────────────────────────
 

@@ -1,0 +1,35 @@
+{
+  "descripcion": "El reintento de la MISMA venta (misma clave): devuelve la misma respuesta con Idempotent-Replayed: true y no duplica nada.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/registrar-venta-carrito",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Idempotency-Key": "4f9d2c1e-7a3b-4c58-9e10-5b6a8d0c1f22",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "items": [
+        {
+          "id_producto": 1,
+          "cantidad": 2
+        }
+      ],
+      "metodo_pago": "Efectivo",
+      "efectivo_recibido": 10000
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict",
+      "Idempotent-Replayed": "true"
+    },
+    "body": {
+      "success": true,
+      "message": "Venta registrada correctamente",
+      "id_venta": 1
+    }
+  }
+}

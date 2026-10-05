@@ -32,13 +32,27 @@ class RespuestaFalsa {
 
   /// Carga una respuesta desde un ejemplo REAL del backend (carpeta `test/fixtures/api`). Esos archivos son
   /// copias de `docs/ejemplos_app_tendero/` del repositorio del backend: si la API cambia, hay que volver a
-  /// copiarlos. Se usa el estado y el cuerpo; las cabeceras del ejemplo son marcadores, no valores reales.
+  /// copiarlos. Se usa el estado y el cuerpo; las cabeceras del ejemplo son marcadores, no valores reales, salvo
+  /// `Idempotent-Replayed`, que es una cabecera de verdad y la app la lee.
   factory RespuestaFalsa.deEjemplo(String nombre) {
     final texto = File('test/fixtures/api/$nombre.json').readAsStringSync();
     final respuesta =
         (jsonDecode(texto) as Map<String, dynamic>)['respuesta']
             as Map<String, dynamic>;
-    return RespuestaFalsa(respuesta['estado'] as int, respuesta['body']);
+    final cabeceras = respuesta['headers'];
+    final repetida =
+        cabeceras is Map && cabeceras['Idempotent-Replayed'] != null;
+    return RespuestaFalsa(
+      respuesta['estado'] as int,
+      respuesta['body'],
+      headers: repetida
+          ? {
+              'idempotent-replayed': [
+                cabeceras['Idempotent-Replayed'] as String,
+              ],
+            }
+          : const {},
+    );
   }
 }
 
