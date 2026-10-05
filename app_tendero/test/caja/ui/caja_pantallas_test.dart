@@ -103,11 +103,9 @@ void main() {
         expect(find.text('Abrir caja'), findsNothing);
         expect(botonVender(tester).onPressed, isNotNull);
         await tester.tap(find.text('Vender'));
-        await tester.pump();
-        expect(
-          find.text('La pantalla de venta llega en el siguiente paso.'),
-          findsOneWidget,
-        );
+        await tester.pumpAndSettle();
+        expect(find.text('Carrito'), findsOneWidget); // se abre el carrito
+        expect(find.text('El carrito está vacío'), findsOneWidget);
       },
     );
 

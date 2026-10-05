@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../ui/colores.dart';
+import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
 import '../buscar_productos.dart';
@@ -10,12 +11,13 @@ import '../producto.dart';
 
 /// Pantalla para buscar un producto escribiendo su nombre, categoría o código.
 ///
-/// Con [alElegir] sirve para ELEGIR un producto (el carrito la usará): al tocar uno disponible se llama a esa
-/// función y se vuelve atrás. Sin [alElegir] es una consulta: al tocar un producto se muestran sus datos.
+/// Con [alElegir] sirve para ELEGIR un producto (la usa el carrito): al tocar uno se llama a esa función, que decide
+/// si lo acepta. Si devuelve `null` se vuelve atrás; si devuelve un texto (por ejemplo «está agotado») se muestra y
+/// se sigue en la pantalla. Sin [alElegir] es una consulta: al tocar un producto se muestran sus datos.
 class BuscarProductoScreen extends ConsumerStatefulWidget {
   const BuscarProductoScreen({super.key, this.alElegir});
 
-  final void Function(Producto producto)? alElegir;
+  final String? Function(Producto producto)? alElegir;
 
   @override
   ConsumerState<BuscarProductoScreen> createState() =>
@@ -37,13 +39,13 @@ class _BuscarProductoScreenState extends ConsumerState<BuscarProductoScreen> {
       _mostrarDatos(producto);
       return;
     }
-    if (producto.agotado) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('«${producto.nombre}» está agotado.')),
-      );
+    // Quien elige decide si acepta el producto: si no, devuelve el motivo y se queda en la pantalla.
+    final rechazo = widget.alElegir!(producto);
+    if (rechazo != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(rechazo)));
       return;
     }
-    widget.alElegir!(producto);
     Navigator.of(context).pop();
   }
 
@@ -195,6 +197,8 @@ class _FilaDeProducto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final agotado = producto.agotado;
+    final centavos = centavosDeImporte(producto.precio);
+    final sinPrecio = centavos == null || centavos <= 0;
     return ListTile(
       onTap: alTocar,
       tileColor: Colors.white,
@@ -218,6 +222,11 @@ class _FilaDeProducto extends StatelessWidget {
           if (agotado) ...[
             const SizedBox(width: 8),
             const _Etiqueta('Agotado', Colores.peligro, Colores.peligroSuave),
+          ],
+          // Sin precio (0 o ilegible): casi siempre es un error de datos y no se puede vender.
+          if (sinPrecio) ...[
+            const SizedBox(width: 8),
+            const _Etiqueta('Sin precio', Colores.aviso, Colores.avisoSuave),
           ],
         ],
       ),
