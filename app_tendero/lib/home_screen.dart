@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth/auth_providers.dart';
 import 'caja/caja_providers.dart';
 import 'caja/ui/tarjeta_de_caja.dart';
+import 'catalogo/ui/buscar_producto_screen.dart';
 import 'scanner_screen.dart';
 import 'ui/colores.dart';
 
@@ -74,6 +75,16 @@ class HomeScreen extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const BuscarProductoScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.search),
+              label: const Text('Consultar productos'),
+            ),
+            const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const ScannerScreen()),

@@ -3,7 +3,7 @@
 App nativa (Flutter, Android primero) para que el Tendero de una tienda de barrio venda, abra y cierre caja desde el celular. Se conecta a la API del backend de StockPilot.
 
 - **Identificador:** `com.lem.stockpilot` (`lem` son las iniciales del equipo fundador; no se cambia).
-- **Estado:** en construcción. Hay escáner de prueba (paso 1), la sesión completa (paso 2: login, segundo factor, primer cambio de contraseña y cerrar sesión) y la apertura de caja (paso 3). La guía de construcción define el orden de lo que sigue.
+- **Estado:** en construcción. Hay escáner de prueba (paso 1), la sesión completa (paso 2: login, segundo factor, primer cambio de contraseña y cerrar sesión) la apertura de caja (paso 3) y la consulta de productos con búsqueda por nombre, categoría o código (paso 4, subpaso 1). La guía de construcción define el orden de lo que sigue.
 
 ## Documentación (vive en el repositorio del backend, `StockPilot`, carpeta `docs/`)
 - `guia_construccion_app.md`: por dónde empezar y cuándo se da cada paso por terminado.

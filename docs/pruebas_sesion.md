@@ -11,9 +11,20 @@ Pruebas hechas con la app real en un celular, contra el servidor desplegado. Cad
 | 4-oct-2026 | **Prueba A, cookie persistente:** cerrar la app del todo (quitarla de recientes), esperar unos minutos y reabrirla | **Pasó:** mostró «Conectando…» y entró directo al inicio, sin pedir contraseña. |
 | 4-oct-2026 | **Prueba B, la sesión caduca:** cerrar la app del todo, esperar más de 30 minutos sin abrirla y reabrirla | **Pasó:** todo salió según lo previsto (pidió iniciar sesión de nuevo). |
 
+| 4-oct-2026 | **Caja (paso 3):** con una caja ya abierta desde la web, entrar a la app | **Pasó:** mostró «Caja abierta», el efectivo inicial y la hora, con **Vender** activo. Además se vio el aviso del 409 (candado de una sesión caducada), que se corrigió en el servidor (rama `fix/candado-sesion-caducada`). |
+| 4-oct-2026 | **Caja (paso 3):** abrir la caja desde la app | **Pasó** (reportado: «funciona bien»). |
+
 *(Reportado por el responsable de la prueba. Anotar el modelo del celular en las próximas filas.)*
 
-## Pendiente de probar en celular: caja (paso 3)
+## Pendiente de probar en celular: catálogo (paso 4, subpaso 1)
+- Desde el inicio, **Consultar productos**: debe mostrar los productos de la tienda con precio en pesos y stock, ordenados por nombre.
+- **Buscar:** escribir parte de un nombre (con y sin tildes, en mayúsculas o minúsculas), una categoría, un código interno y un código de barras. Con varias palabras, cada una debe aparecer.
+- Un producto **agotado** debe verse marcado «Agotado»; uno **inactivo** no debe aparecer.
+- Tocar un producto muestra sus datos, y «Código de barras: sin asociar» si no tiene.
+- **Tirar para actualizar** con y sin conexión (modo avión): sin conexión debe conservar la lista y avisar.
+- Con un catálogo grande (cientos de productos) comprobar que escribir no se siente lento.
+
+## Pendiente de probar en celular: caja (paso 3), lo que falta
 - **Caja cerrada:** al entrar con una cuenta sin caja abierta, el inicio dice «Caja cerrada», el botón **Vender** está bloqueado y aparece «Abre la caja para vender».
 - **Abrir caja:** escribir un monto (por ejemplo 50000), confirmar el aviso «Vas a abrir la caja con $50.000. ¿Es correcto?». Debe volver al inicio con «Caja abierta», «Efectivo inicial: $50.000» y **Vender** activo.
 - **Abrir con 0** también debe funcionar.
