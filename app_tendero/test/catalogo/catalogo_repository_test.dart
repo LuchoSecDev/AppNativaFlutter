@@ -131,27 +131,21 @@ void main() {
     test('si el producto existe, devuelve el producto parseado', () async {
       servidor.programar(
         'GET',
-        '/api/productos/barcode/12345',
-        const RespuestaFalsa(200, {
-          'success': true,
-          'producto': {
-            'id_producto': 10,
-            'nombre_producto': 'Pan',
-            'precio': '2000.00',
-          }
-        }),
+        '/api/productos/barcode/7701234000011',
+        RespuestaFalsa.deEjemplo('11_C2_producto_por_codigo_de_barras'),
       );
-      final p = await repo.buscarPorCodigoBarras('12345');
+      final p = await repo.buscarPorCodigoBarras('7701234000011');
       expect(p, isNotNull);
-      expect(p!.id, 10);
-      expect(p.nombre, 'Pan');
+      expect(p!.id, 1);
+      expect(p.nombre, 'Arroz Diana 1Kg');
+      expect(p.codigo, 'ARR-001');
     });
 
     test('si devuelve 404, devuelve null sin lanzar error', () async {
       servidor.programar(
         'GET',
         '/api/productos/barcode/inexistente',
-        const RespuestaFalsa(404, {'success': false, 'error': 'No encontrado'}),
+        RespuestaFalsa.deEjemplo('12_C2_codigo_no_encontrado_404'),
       );
       final p = await repo.buscarPorCodigoBarras('inexistente');
       expect(p, isNull);
@@ -172,25 +166,22 @@ void main() {
       servidor.programar(
         'PUT',
         '/api/productos/10/link-barcode',
-        const RespuestaFalsa(200, {'success': true}),
+        RespuestaFalsa.deEjemplo('14_C3_vincular_codigo_de_barras'),
       );
-      await repo.vincularCodigoBarras(10, '12345');
+      await repo.vincularCodigoBarras(10, '7709876543210');
       final req = servidor.peticiones.last;
-      expect(req.cuerpo, {'codigo_barras': '12345'});
+      expect(req.cuerpo, {'codigo_barras': '7709876543210'});
     });
 
     test('si da 409 (duplicado), lanza ErrorDeApi con el mensaje del servidor', () async {
       servidor.programar(
         'PUT',
         '/api/productos/10/link-barcode',
-        const RespuestaFalsa(409, {
-          'success': false,
-          'error': 'Ese código ya pertenece a «Arroz».',
-        }),
+        RespuestaFalsa.deEjemplo('15_C3_codigo_ya_vinculado_409'),
       );
       await expectLater(
         repo.vincularCodigoBarras(10, '12345'),
-        throwsA(isA<ErrorDeApi>().having((e) => e.mensaje, 'mensaje', contains('Arroz'))),
+        throwsA(isA<ErrorDeApi>().having((e) => e.mensaje, 'mensaje', contains('ya pertenece'))),
       );
     });
   });

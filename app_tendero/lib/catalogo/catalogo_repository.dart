@@ -31,12 +31,12 @@ class CatalogoRepository {
   /// Si existe devuelve el producto, si es 404 devuelve `null`.
   Future<Producto?> buscarPorCodigoBarras(String code) async {
     try {
-      final r = await _dio.get<dynamic>('/api/productos/barcode/$code');
+      final r = await _dio.get<dynamic>('/api/productos/barcode/${Uri.encodeComponent(code)}');
       final datos = r.data;
-      if (datos is! Map<String, dynamic> || !datos.containsKey('producto')) {
+      if (datos is! Map<String, dynamic> || !datos.containsKey('data')) {
         throw const ErrorDeApi(respuestaInesperada);
       }
-      return Producto.desdeJson(datos['producto'] as Map<String, dynamic>);
+      return Producto.desdeJson(datos['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return null;
       throw ErrorDeApi(mensajeDeFalla(e));

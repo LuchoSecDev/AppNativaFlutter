@@ -1,0 +1,43 @@
+{
+  "descripcion": "Consulta del escáner: producto por código de barras.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/productos/barcode/7701234000011",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "data": {
+        "id_producto": 1,
+        "codigo": "ARR-001",
+        "codigo_barras": "7701234000011",
+        "nombre_producto": "Arroz Diana 1Kg",
+        "categoria": "Granos",
+        "subcategoria": null,
+        "tipo_producto": "Normal",
+        "precio": "4500.00",
+        "cantidad": 10,
+        "stock_minimo": 2,
+        "stock_maximo": 200,
+        "stock_seguridad": 2,
+        "lead_time": 3,
+        "fecha_entrada": "2026-10-04T15:30:00.000Z",
+        "fecha_salida": null,
+        "estado": "Disponible",
+        "id_tienda": 1,
+        "id_proveedor": null,
+        "fecha_vencimiento": null,
+        "frecuencia_compra_dias": 7,
+        "precio_original": null,
+        "fecha_fin_promocion": null
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "descripcion": "Código de barras que no existe en la tienda.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/productos/barcode/0000000000000",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 404,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "error": "Producto no encontrado"
+    }
+  }
+}

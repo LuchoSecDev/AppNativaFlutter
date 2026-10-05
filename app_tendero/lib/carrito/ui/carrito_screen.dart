@@ -9,6 +9,7 @@ import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
 import '../../venta/ui/cobrar_efectivo_screen.dart';
+import '../../venta/ui/escaner_venta_screen.dart';
 import '../../venta/venta_providers.dart';
 import '../carrito_models.dart';
 import '../carrito_providers.dart';
@@ -435,11 +436,23 @@ class _PieDelCarrito extends StatelessWidget {
             ],
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: alAgregar,
-              icon: const Icon(Icons.add),
-              label: const Text('Agregar producto'),
+              onPressed: puedeVender
+                  ? () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const EscanerVentaScreen(),
+                        ),
+                      )
+                  : null,
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Escanear producto'),
             ),
             const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: alAgregar,
+              icon: const Icon(Icons.search),
+              label: const Text('Buscar manualmente'),
+            ),
+            const SizedBox(height: 16),
             FilledButton(
               onPressed: resumen.sePuedeCobrar && puedeVender ? alCobrar : null,
               child: const Text('Cobrar en efectivo'),
@@ -447,7 +460,7 @@ class _PieDelCarrito extends StatelessWidget {
             if (!puedeVender) ...[
               const SizedBox(height: 4),
               const Text(
-                'Abre la caja para cobrar.',
+                'Abre la caja para cobrar y escanear.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: Colores.tinta),
               ),

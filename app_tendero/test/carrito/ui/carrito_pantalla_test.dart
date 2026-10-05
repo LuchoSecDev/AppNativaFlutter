@@ -330,7 +330,7 @@ void main() {
           find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
         );
         expect(cobrar.onPressed, isNull);
-        expect(find.text('Abre la caja para cobrar.'), findsOneWidget);
+        expect(find.text('Abre la caja para cobrar y escanear.'), findsOneWidget);
       },
     );
 
