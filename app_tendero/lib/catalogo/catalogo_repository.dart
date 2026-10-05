@@ -27,23 +27,34 @@ class CatalogoRepository {
     }
   }
 
-  /// `GET /api/productos/barcode/:code`. Busca un producto por código o código de barras.
-  /// Si existe devuelve el producto, si es 404 devuelve `null`.
+  /// [C2] `GET /api/productos/barcode/:code`. Busca por código de barras Y por código interno (SKU). Devuelve el
+  /// producto, o `null` si el servidor responde 404 (no existe, o es de otra tienda). La respuesta trae el producto en
+  /// `data` (contrato, ejemplo 11).
   Future<Producto?> buscarPorCodigoBarras(String code) async {
     try {
-      final r = await _dio.get<dynamic>('/api/productos/barcode/${Uri.encodeComponent(code)}');
+      // El código sale de una etiqueta y puede traer `/`, `?` o `#` (un QR, un Code 128): sin codificarlo iría a otra
+      // ruta del servidor.
+      final r = await _dio.get<dynamic>(
+        '/api/productos/barcode/${Uri.encodeComponent(code)}',
+      );
       final datos = r.data;
-      if (datos is! Map<String, dynamic> || !datos.containsKey('data')) {
+      final producto = datos is Map<String, dynamic> ? datos['data'] : null;
+      if (producto is! Map<String, dynamic>) {
         throw const ErrorDeApi(respuestaInesperada);
       }
-      return Producto.desdeJson(datos['data'] as Map<String, dynamic>);
+      return Producto.desdeJson(producto);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return null;
+      if (e.response?.statusCode == 404) {
+        return null;
+      }
       throw ErrorDeApi(mensajeDeFalla(e));
     }
   }
 
-  /// `PUT /api/productos/:id/link-barcode`. Vincula un código de barras nuevo a un producto existente.
+  /// [C3] `PUT /api/productos/:id/link-barcode`. Vincula un código de barras a un producto de la tienda.
+  ///
+  /// Los rechazos con motivo del servidor (400 código vacío o de más de 50 caracteres, 404 producto inexistente,
+  /// 409 «Ese código ya pertenece a «Arroz».») se lanzan como [ErrorDeApi] con ese mismo texto.
   Future<void> vincularCodigoBarras(int productoId, String codigoBarras) async {
     try {
       await _dio.put<dynamic>(
@@ -51,10 +62,12 @@ class CatalogoRepository {
         data: {'codigo_barras': codigoBarras},
       );
     } on DioException catch (e) {
-      if (e.response?.statusCode == 409) {
-        throw ErrorDeApi(mensajeDelServidor(e.response?.data) ?? mensajeDeFalla(e));
-      }
-      throw ErrorDeApi(mensajeDeFalla(e));
+      final estado = e.response?.statusCode;
+      final conMotivo = estado == 400 || estado == 404 || estado == 409;
+      throw ErrorDeApi(
+        (conMotivo ? mensajeDelServidor(e.response?.data) : null) ??
+            mensajeDeFalla(e),
+      );
     }
   }
 }

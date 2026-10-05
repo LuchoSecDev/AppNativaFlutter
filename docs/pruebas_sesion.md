@@ -33,6 +33,23 @@ Con la caja abierta y productos en el carrito. **Cada prueba que toca el dinero 
 12. **Stock insuficiente:** bajar el stock en la web por debajo de lo que hay en el carrito y cobrar: el servidor lo rechaza con el nombre del producto; el carrito se conserva.
 13. **Cierre de caja (web o servidor):** el efectivo de las ventas cobradas desde la app debe sumar en el arqueo.
 
+## Pendiente de probar en celular: escáner en la venta (paso 4, subpaso 4)
+Con la caja abierta. Lo que **solo** se ve con la cámara real es lo más importante de esta lista.
+1. **Primer producto:** con el carrito **vacío** debe verse **Escanear producto** (activo con caja abierta; bloqueado y con «Abre la caja para escanear» sin caja). También aparece con el carrito con productos, junto a **Buscar manualmente**.
+2. **Producto conocido:** escanear una etiqueta: aparece «Agregado: …», la cámara **sigue escaneando** y el panel inferior muestra «Carrito: N unidades · $total».
+3. **Doble lectura (la prueba clave):** dejar el MISMO producto frente a la cámara 5 a 10 segundos. Debe sumar **una sola** unidad. Retirarlo más de 1,5 s y volver a mostrarlo: suma **otra**. Si se suman unidades de más, subir `silencioParaRepetirProducto` en `escaner_venta_screen.dart`; si cuesta escanear dos unidades iguales seguidas, bajarlo.
+4. **Dos productos distintos seguidos:** se agregan los dos, sin esperar.
+5. **Agotado o sin precio (0):** no se agrega y dice por qué.
+6. **Etiqueta propia con `codigo` (SKU)** en Code 128 o QR, sin código de barras comercial: lo encuentra igual.
+7. **Código desconocido:** aparece «Código no encontrado». **Cancelar** vuelve a escanear. **Vincular** abre la lista; al elegir un producto dice «Vinculado y agregado…». Comprobar en la web que el producto tiene ahora ese código, y que al escanearlo otra vez lo encuentra.
+8. **Vincular un producto agotado:** el vínculo se hace y avisa que no se pudo agregar.
+9. **Código que ya pertenece a otro producto:** muestra «Ese código ya pertenece a …» y no agrega nada.
+10. **Volver atrás** en la lista de vincular: no se vincula nada y se sigue escaneando.
+11. **Modo avión** al escanear: mensaje claro de conexión; al volver la red, el mismo código se puede escanear de inmediato.
+12. **Listo, volver al carrito:** el carrito muestra lo escaneado y el total correcto; cobrar funciona como antes.
+13. **Regresión:** **Probar el escáner** (la pantalla de diagnóstico del inicio y del login) debe leer un código y mostrarlo con «Escanear otro», igual que en el paso 1: ahora comparte con la venta la vista de la cámara.
+14. **Otro celular:** repetir 2, 3 y 13 en un segundo teléfono (lo harán los compañeros).
+
 ## Pendiente de probar en celular: caja (paso 3), lo que falta
 - **Caja cerrada:** al entrar con una cuenta sin caja abierta, el inicio dice «Caja cerrada», el botón **Vender** está bloqueado y aparece «Abre la caja para vender».
 - **Abrir caja:** escribir un monto (por ejemplo 50000), confirmar el aviso «Vas a abrir la caja con $50.000. ¿Es correcto?». Debe volver al inicio con «Caja abierta», «Efectivo inicial: $50.000» y **Vender** activo.

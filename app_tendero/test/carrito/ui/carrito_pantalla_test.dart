@@ -79,7 +79,7 @@ void main() {
   }
 
   Future<void> agregarDesdeBuscador(WidgetTester tester, String nombre) async {
-    await tester.tap(find.text('Agregar producto').last);
+    await tester.tap(find.text('Buscar manualmente').last);
     await tester.pumpAndSettle();
     expect(find.text('Elegir producto'), findsOneWidget);
     await tester.tap(find.text(nombre));
@@ -89,11 +89,53 @@ void main() {
   Finder boton(String tooltip) => find.byTooltip(tooltip);
 
   group('el carrito', () {
-    testWidgets('vacío: lo dice y ofrece agregar un producto', (tester) async {
-      await abrir(tester, pantalla: const CarritoScreen());
-      expect(find.text('El carrito está vacío'), findsOneWidget);
-      expect(find.text('Agregar producto'), findsOneWidget);
-      expect(find.byTooltip('Vaciar carrito'), findsNothing);
+    testWidgets(
+      'vacío: lo dice y ofrece escanear (para el PRIMER producto) o buscar',
+      (tester) async {
+        await abrir(
+          tester,
+          pantalla: const CarritoScreen(),
+          conCajaAbierta: true,
+        );
+        expect(find.text('El carrito está vacío'), findsOneWidget);
+        expect(find.text('Buscar manualmente'), findsOneWidget);
+        final escanear = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Escanear producto'),
+        );
+        expect(escanear.onPressed, isNotNull);
+        expect(find.byTooltip('Vaciar carrito'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'vacío y sin caja abierta: el escáner está bloqueado y lo explica',
+      (tester) async {
+        await abrir(tester, pantalla: const CarritoScreen());
+        final escanear = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Escanear producto'),
+        );
+        expect(escanear.onPressed, isNull);
+        expect(find.text('Abre la caja para escanear.'), findsOneWidget);
+        expect(find.text('Buscar manualmente'), findsOneWidget);
+      },
+    );
+
+    testWidgets('con productos y caja abierta: se puede escanear y buscar', (
+      tester,
+    ) async {
+      await abrir(
+        tester,
+        pantalla: const CarritoScreen(),
+        conCajaAbierta: true,
+        lineas: const [
+          LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 1),
+        ],
+      );
+      final escanear = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Escanear producto'),
+      );
+      expect(escanear.onPressed, isNotNull);
+      expect(find.text('Buscar manualmente'), findsOneWidget);
     });
 
     testWidgets(
@@ -330,7 +372,10 @@ void main() {
           find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
         );
         expect(cobrar.onPressed, isNull);
-        expect(find.text('Abre la caja para cobrar y escanear.'), findsOneWidget);
+        expect(
+          find.text('Abre la caja para cobrar y escanear.'),
+          findsOneWidget,
+        );
       },
     );
 

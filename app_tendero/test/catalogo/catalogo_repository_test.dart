@@ -151,13 +151,59 @@ void main() {
       expect(p, isNull);
     });
 
+    test(
+      'el código se CODIFICA en la ruta: un QR con «/» o «?» no cambia de ruta',
+      () async {
+        servidor.programar(
+          'GET',
+          '/api/productos/barcode/A%2FB%3Fx%23y',
+          RespuestaFalsa.deEjemplo('12_C2_codigo_no_encontrado_404'),
+        );
+        expect(await repo.buscarPorCodigoBarras('A/B?x#y'), isNull);
+        expect(
+          servidor.peticiones.last.ruta,
+          '/api/productos/barcode/A%2FB%3Fx%23y',
+        );
+      },
+    );
+
+    test('una respuesta 200 sin el producto en «data» lanza ErrorDeApi (no un error de tipos)', () async {
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/777',
+        const RespuestaFalsa(200, {
+          'success': true,
+          'producto': {'id_producto': 1},
+        }),
+      );
+      await expectLater(
+        repo.buscarPorCodigoBarras('777'),
+        throwsA(isA<ErrorDeApi>()),
+      );
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/778',
+        const RespuestaFalsa(200, {
+          'success': true,
+          'data': 'no es un producto',
+        }),
+      );
+      await expectLater(
+        repo.buscarPorCodigoBarras('778'),
+        throwsA(isA<ErrorDeApi>()),
+      );
+    });
+
     test('falla de red lanza ErrorDeApi', () async {
       servidor.programar(
         'GET',
         '/api/productos/barcode/555',
         const RespuestaFalsa.falloDeRed(DioExceptionType.connectionError),
       );
-      await expectLater(repo.buscarPorCodigoBarras('555'), throwsA(isA<ErrorDeApi>()));
+      await expectLater(
+        repo.buscarPorCodigoBarras('555'),
+        throwsA(isA<ErrorDeApi>()),
+      );
     });
   });
 
@@ -173,15 +219,63 @@ void main() {
       expect(req.cuerpo, {'codigo_barras': '7709876543210'});
     });
 
-    test('si da 409 (duplicado), lanza ErrorDeApi con el mensaje del servidor', () async {
+    test(
+      'si da 409 (duplicado), lanza ErrorDeApi con el mensaje del servidor',
+      () async {
+        servidor.programar(
+          'PUT',
+          '/api/productos/10/link-barcode',
+          RespuestaFalsa.deEjemplo('15_C3_codigo_ya_vinculado_409'),
+        );
+        await expectLater(
+          repo.vincularCodigoBarras(10, '12345'),
+          throwsA(
+            isA<ErrorDeApi>().having(
+              (e) => e.mensaje,
+              'mensaje',
+              contains('ya pertenece'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('un 400 (código de más de 50 caracteres) también muestra el motivo del servidor', () async {
       servidor.programar(
         'PUT',
         '/api/productos/10/link-barcode',
-        RespuestaFalsa.deEjemplo('15_C3_codigo_ya_vinculado_409'),
+        const RespuestaFalsa(400, {
+          'success': false,
+          'error': 'El código de barras no puede tener más de 50 caracteres',
+        }),
       );
       await expectLater(
-        repo.vincularCodigoBarras(10, '12345'),
-        throwsA(isA<ErrorDeApi>().having((e) => e.mensaje, 'mensaje', contains('ya pertenece'))),
+        repo.vincularCodigoBarras(10, 'x' * 60),
+        throwsA(
+          isA<ErrorDeApi>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            contains('50 caracteres'),
+          ),
+        ),
+      );
+    });
+
+    test('una falla de red lanza ErrorDeApi con el mensaje de conexión, no un texto técnico', () async {
+      servidor.programar(
+        'PUT',
+        '/api/productos/10/link-barcode',
+        const RespuestaFalsa.falloDeRed(DioExceptionType.connectionError),
+      );
+      await expectLater(
+        repo.vincularCodigoBarras(10, '123'),
+        throwsA(
+          isA<ErrorDeApi>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            contains('conexión'),
+          ),
+        ),
       );
     });
   });

@@ -1,458 +1,301 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../scan_stabilizer.dart';
-import '../../catalogo/catalogo_providers.dart';
-import '../../carrito/carrito_providers.dart';
-import '../../catalogo/ui/buscar_producto_screen.dart';
-import '../../catalogo/producto.dart';
-
 import '../../api/errores_de_api.dart';
-import '../../carrito/ui/carrito_screen.dart';
+import '../../carrito/carrito_models.dart';
+import '../../carrito/carrito_providers.dart';
+import '../../catalogo/catalogo_providers.dart';
+import '../../catalogo/producto.dart';
+import '../../catalogo/ui/buscar_producto_screen.dart';
+import '../../scan_stabilizer.dart';
+import '../../ui/colores.dart';
+import '../../ui/dinero.dart';
+import '../../ui/formato.dart';
+import '../../vista_de_escaneo.dart';
 
-/// Interruptor de la zona de lectura. `true`: el lector solo analiza lo que está dentro del recuadro.
-/// `false`: analiza toda la imagen de la cámara (el comportamiento anterior).
-const bool _usarVentanaDeEscaneo = true;
+/// Cuánto tiempo sin ver un código hace falta para aceptarlo otra vez. Mientras la cámara siga apuntando al producto
+/// recién agregado NO se agrega de nuevo (una unidad de más sin que nadie lo note). Si en las pruebas con celulares
+/// reales el temblor de la cámara agrega unidades dobles, subir este valor; si cuesta escanear dos unidades iguales
+/// seguidas, bajarlo.
+const Duration silencioParaRepetirProducto = Duration(milliseconds: 1500);
 
+/// Construye la vista de la cámara. Existe para que las pruebas pongan una vista falsa (la cámara real solo se puede
+/// probar en un celular); la app real usa [VistaDeEscaneo].
+typedef ConstructorDeVistaDeEscaneo = Widget Function(
+  BuildContext context,
+  ScanStabilizer estabilizador,
+  bool pausado,
+  ValueChanged<String> alConfirmar,
+);
+
+/// Escanear productos para el carrito, uno tras otro. Un código conocido se agrega; uno desconocido ofrece
+/// vincularlo a un producto de la lista.
 class EscanerVentaScreen extends ConsumerStatefulWidget {
-  const EscanerVentaScreen({super.key});
+  const EscanerVentaScreen({super.key, @visibleForTesting this.construirVista});
+
+  final ConstructorDeVistaDeEscaneo? construirVista;
 
   @override
   ConsumerState<EscanerVentaScreen> createState() => _EscanerVentaScreenState();
 }
 
-class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen>
-    with SingleTickerProviderStateMixin {
-  final MobileScannerController cameraController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    formats: const [
-      BarcodeFormat.ean13,
-      BarcodeFormat.ean8,
-      BarcodeFormat.upcA,
-      BarcodeFormat.code128,
-      BarcodeFormat.qrCode,
-    ],
+class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen> {
+  /// `null` cuando las pruebas ponen su propia vista.
+  late final MobileScannerController? _camara;
+
+  final ScanStabilizer _estabilizador = ScanStabilizer(
+    silencioParaRepetir: silencioParaRepetirProducto,
   );
 
-  String? confirmedCode;
-  bool isPaused = false;
-
-  // --- Estabilización: confirma un código solo tras varias lecturas iguales seguidas ---
-  final ScanStabilizer _stabilizer = ScanStabilizer();
-
-  // --- Animación ---
-  late AnimationController _animationController;
+  /// `true` mientras se procesa un código (consulta al servidor, diálogo, elegir producto). El estado es el seguro
+  /// contra una segunda lectura: nada se procesa en pausa.
+  bool _pausado = false;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    _camara = widget.construirVista == null
+        ? crearControladorDeEscaneo()
+        : null;
   }
 
-  bool _procesando = false;
+  @override
+  void dispose() {
+    _camara?.dispose();
+    super.dispose();
+  }
 
-  void _onDetect(BarcodeCapture capture) async {
-    if (isPaused || _procesando) return;
+  // ───────────────────────── flujo ─────────────────────────
 
-    final List<Barcode> barcodes = capture.barcodes;
-    if (barcodes.isEmpty) return;
-
-    final code = barcodes.first.rawValue;
-    if (code == null || code.isEmpty) return;
-
-    final confirmed = _stabilizer.register(code);
-    if (confirmed != null) {
-      HapticFeedback.mediumImpact();
-      setState(() {
-        confirmedCode = confirmed;
-        isPaused = true;
-        _procesando = true;
-      });
-      _animationController.stop();
-
-      final repo = ref.read(catalogoRepositoryProvider);
-      try {
-        final producto = await repo.buscarPorCodigoBarras(confirmed);
-        if (!mounted) return;
-        if (producto != null) {
-          final res = ref.read(carritoProvider.notifier).agregar(producto);
-          final rechazo = CarritoScreen.mensajeDeAgregar(res, producto);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(rechazo ?? 'Agregado: ${producto.nombre}'),
-              backgroundColor: rechazo == null ? const Color(0xFF0B6B45) : Colors.red,
-            ),
-          );
-          // Escaneo continuo: reanudar inmediatamente
-          _resumeScanning();
-        } else {
-          // Mostrar diálogo para vincular
-          _mostrarVincularCodigo(confirmed);
-        }
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ErrorDeApi ? e.mensaje : e.toString()), backgroundColor: Colors.red),
-        );
-        _resumeScanning();
+  Future<void> _alConfirmar(String codigo) async {
+    if (_pausado) {
+      return;
+    }
+    setState(() => _pausado = true);
+    try {
+      final producto = await ref
+          .read(catalogoRepositoryProvider)
+          .buscarPorCodigoBarras(codigo);
+      if (!mounted) {
+        return;
       }
+      if (producto == null) {
+        await _ofrecerVincular(codigo);
+        return;
+      }
+      final rechazo = _agregar(producto);
+      _avisar(
+        rechazo ?? 'Agregado: ${producto.nombre}',
+        tipo: rechazo == null ? _Aviso.exito : _Aviso.error,
+      );
+      // Sin reiniciar: la cámara sigue un momento sobre este producto y no debe agregarse otra vez.
+      _reanudar(reiniciar: false);
+    } on ErrorDeApi catch (e) {
+      if (!mounted) {
+        return;
+      }
+      _avisar(e.mensaje, tipo: _Aviso.error);
+      _reanudar(
+        reiniciar: true,
+      ); // tras un error se puede reintentar el mismo código al instante
     }
   }
 
-  void _mostrarVincularCodigo(String code) {
-    showDialog<void>(
+  Future<void> _ofrecerVincular(String codigo) async {
+    final vincular = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (contexto) => AlertDialog(
         title: const Text('Código no encontrado'),
-        content: Text('El código $code no está vinculado a ningún producto. ¿Deseas vincularlo ahora?'),
+        content: Text(
+          'El código $codigo no está vinculado a ningún producto. ¿Quieres vincularlo a uno de tu lista?',
+        ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resumeScanning();
-            },
+            onPressed: () => Navigator.of(contexto).pop(false),
             child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _seleccionarParaVincular(code);
-            },
+          FilledButton(
+            onPressed: () => Navigator.of(contexto).pop(true),
             child: const Text('Vincular'),
           ),
         ],
       ),
     );
+    if (!mounted) {
+      return;
+    }
+    if (vincular != true) {
+      _reanudar(reiniciar: true);
+      return;
+    }
+    await _vincular(codigo);
   }
 
-  Future<void> _seleccionarParaVincular(String code) async {
-    final productoSeleccionado = await Navigator.push<Producto>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BuscarProductoScreen(
-          alElegir: (p) {
-            if (!p.estaDisponible) return 'Este producto está inactivo.';
-            if (p.agotado) return 'Este producto está agotado.';
-            if (p.precio == '0.00' || p.precio.isEmpty) return 'El producto no tiene precio asignado.';
-            return null;
-          },
-        ),
+  Future<void> _vincular(String codigo) async {
+    // Vincular un código es un hecho del producto físico: no depende de su stock ni de su precio. Se acepta cualquier
+    // producto de la lista y, si luego no se puede agregar (agotado, sin precio), se dice por qué.
+    final elegido = await Navigator.of(context).push<Producto>(
+      MaterialPageRoute<Producto>(
+        builder: (_) => BuscarProductoScreen(alElegir: (_) => null),
       ),
     );
-
-    if (productoSeleccionado == null) {
-      _resumeScanning();
+    if (!mounted) {
+      return;
+    }
+    if (elegido == null) {
+      _reanudar(reiniciar: true);
       return;
     }
 
-    if (!mounted) return;
-
-    setState(() => _procesando = true);
-    final repo = ref.read(catalogoRepositoryProvider);
     try {
-      await repo.vincularCodigoBarras(productoSeleccionado.id, code);
-      if (!mounted) return;
-      
-      // Actualizar el catálogo y recuperar el producto fresco
-      await ref.read(catalogoProvider.notifier).cargar();
-      
-      if (!mounted) return;
-      
-      final catalogoFresquito = ref.read(catalogoProvider);
-      final pActualizado = catalogoFresquito.productos.where((p) => p.id == productoSeleccionado.id).firstOrNull;
-      
-      if (pActualizado != null) {
-        final res = ref.read(carritoProvider.notifier).agregar(pActualizado);
-        final rechazo = CarritoScreen.mensajeDeAgregar(res, pActualizado);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(rechazo == null ? 'Vinculado y agregado: ${pActualizado.nombre}' : 'Vinculado, pero $rechazo'),
-            backgroundColor: rechazo == null ? const Color(0xFF0B6B45) : Colors.orange,
-          ),
-        );
+      await ref
+          .read(catalogoRepositoryProvider)
+          .vincularCodigoBarras(elegido.id, codigo);
+    } on ErrorDeApi catch (e) {
+      if (!mounted) {
+        return;
       }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e is ErrorDeApi ? e.mensaje : e.toString()), backgroundColor: Colors.red),
-      );
-    } finally {
-      if (mounted) _resumeScanning();
+      _avisar(e.mensaje, tipo: _Aviso.error);
+      _reanudar(reiniciar: true);
+      return;
     }
+    if (!mounted) {
+      return;
+    }
+
+    // El catálogo cambió (ahora el producto tiene este código): se vuelve a descargar. Si no se pudo, se sigue con el
+    // producto elegido, que tiene el mismo precio y stock.
+    final actualizado = await ref.read(catalogoProvider.notifier).cargar();
+    if (!mounted) {
+      return;
+    }
+    final producto =
+        ref
+            .read(catalogoProvider)
+            .productos
+            .where((p) => p.id == elegido.id)
+            .firstOrNull ??
+        elegido;
+    final rechazo = _agregar(producto);
+    final sinLista = actualizado
+        ? ''
+        : ' No se pudo actualizar la lista de productos.';
+    _avisar(
+      rechazo == null
+          ? 'Vinculado y agregado: ${producto.nombre}.$sinLista'
+          : 'Vinculado, pero $rechazo$sinLista',
+      tipo: rechazo == null ? _Aviso.exito : _Aviso.aviso,
+    );
+    _reanudar(reiniciar: false);
   }
 
-  void _resumeScanning() {
-    _stabilizer.reset();
-    setState(() {
-      isPaused = false;
-      confirmedCode = null;
-      _procesando = false;
-    });
-    _animationController.repeat(reverse: true);
+  /// Agrega el producto al carrito. Devuelve el motivo si no se pudo, o `null` si se agregó.
+  String? _agregar(Producto producto) {
+    // El producto puede ser nuevo para esta tienda y no estar en la lista descargada: sin él el carrito no sabría su
+    // precio. Se vuelve a descargar la lista sin esperar.
+    final enLista = ref
+        .read(catalogoProvider)
+        .productos
+        .any((p) => p.id == producto.id);
+    if (!enLista) {
+      ref.read(catalogoProvider.notifier).cargar();
+    }
+    final resultado = ref.read(carritoProvider.notifier).agregar(producto);
+    return mensajeDeAgregar(resultado, producto);
   }
+
+  void _reanudar({required bool reiniciar}) {
+    if (reiniciar) {
+      _estabilizador.reset();
+    }
+    setState(() => _pausado = false);
+  }
+
+  void _avisar(String texto, {required _Aviso tipo}) {
+    final mensajes = ScaffoldMessenger.of(context);
+    mensajes.clearSnackBars();
+    mensajes.showSnackBar(
+      SnackBar(
+        content: Text(texto),
+        duration: const Duration(seconds: 3),
+        backgroundColor: switch (tipo) {
+          _Aviso.exito => Colores.exito,
+          _Aviso.aviso => Colores.aviso,
+          _Aviso.error => Colores.peligro,
+        },
+      ),
+    );
+  }
+
+  // ───────────────────────── pantalla ─────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final resumen = ref.watch(resumenCarritoProvider);
+    final camara = _camara;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Escanear producto'),
-        actions: [
-          ValueListenableBuilder(
-            valueListenable: cameraController,
-            builder: (context, state, child) {
-              final torchState = state.torchState;
-              return IconButton(
-                icon: Icon(
-                  torchState == TorchState.on
-                      ? Icons.flash_on
-                      : Icons.flash_off,
-                  color: torchState == TorchState.on
-                      ? Colors.yellow
-                      : Colors.grey,
-                ),
-                iconSize: 28.0,
-                onPressed: () => cameraController.toggleTorch(),
-              );
-            },
-          ),
-          ValueListenableBuilder(
-            valueListenable: cameraController,
-            builder: (context, state, child) {
-              final facing = state.cameraDirection;
-              return IconButton(
-                icon: Icon(
-                  facing == CameraFacing.front
-                      ? Icons.camera_front
-                      : Icons.camera_rear,
-                ),
-                iconSize: 28.0,
-                onPressed: () => cameraController.switchCamera(),
-              );
-            },
-          ),
-        ],
+        actions: [if (camara != null) ...accionesDeCamara(camara)],
       ),
       body: Column(
         children: [
           Expanded(
             flex: 4,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // El recuadro que se dibuja y la zona que el lector realmente analiza salen del MISMO cálculo,
-                // sobre el tamaño de esta vista previa, para que siempre coincidan.
-                final scanWindowWidth = constraints.maxWidth * 0.75;
-                final scanWindowHeight =
-                    scanWindowWidth *
-                    0.6; // Proporción rectangular para códigos de barras
-                final scanWindow = Rect.fromCenter(
-                  center: constraints.biggest.center(Offset.zero),
-                  width: scanWindowWidth,
-                  height: scanWindowHeight,
-                );
-                return Stack(
-                  children: [
-                    MobileScanner(
-                      controller: cameraController,
-                      // Solo se leen los códigos dentro del recuadro (evita leer el del producto de al lado).
-                      // Si en las pruebas con celulares reales da problemas, poner _usarVentanaDeEscaneo en false.
-                      scanWindow: _usarVentanaDeEscaneo ? scanWindow : null,
-                      onDetect: _onDetect,
-                      // Sin esto, si el usuario niega el permiso o la cámara falla, la pantalla queda vacía.
-                      errorBuilder: (context, error) =>
-                          _CameraError(error: error),
-                    ),
-                    // Overlay oscuro con recorte central
-                    ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                        Colors.black.withValues(alpha: 0.7),
-                        BlendMode.srcOut,
-                      ),
-                      child: Stack(
-                        children: [
-                          Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.black,
-                              backgroundBlendMode: BlendMode.dstOut,
-                            ),
-                          ),
-                          Center(
-                            child: Container(
-                              width: scanWindowWidth,
-                              height: scanWindowHeight,
-                              decoration: BoxDecoration(
-                                color: Colors.black, // Este color se vuelve transparente por el BlendMode
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Bordes del recuadro y línea animada
-                    Center(
-                      child: SizedBox(
-                        width: scanWindowWidth,
-                        height: scanWindowHeight,
-                        child: Stack(
-                          children: [
-                            // Borde blanco
-                            Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.white70,
-                                  width: 2,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            // Esquinas resaltadas (decoración visual extra)
-                            // Línea roja animada
-                            if (!isPaused)
-                              AnimatedBuilder(
-                                animation: _animationController,
-                                builder: (context, child) {
-                                  return Positioned(
-                                    top:
-                                        (_animationController.value *
-                                            (scanWindowHeight - 4)) +
-                                        2,
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(
-                                      height: 2,
-                                      decoration: BoxDecoration(
-                                        color: const Color(
-                                          0xFFFFD84A,
-                                        ), // color-resaltador
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFFFFD84A)
-                                                .withValues(alpha: 0.5),
-                                            blurRadius: 4,
-                                            spreadRadius: 1,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Overlay de confirmación (Check verde)
-                    if (isPaused)
-                      Container(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.check_circle,
-                          color: Color(0xFFDDF3E9), // color-exito-suave
-                          size: 80,
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
+            child:
+                widget.construirVista?.call(
+                  context,
+                  _estabilizador,
+                  _pausado,
+                  _alConfirmar,
+                ) ??
+                VistaDeEscaneo(
+                  controlador: camara!,
+                  estabilizador: _estabilizador,
+                  pausado: _pausado,
+                  alConfirmar: _alConfirmar,
+                ),
           ),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 20.0,
-            ),
-            color: confirmedCode != null
-                ? const Color(0xFF0B6B45)
-                : const Color(0xFF14173F), // color-exito o color-tinta
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  confirmedCode != null
-                      ? '✅ Código: $confirmedCode'
-                      : 'Centra el código en el recuadro',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                if (confirmedCode != null) ...[
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: _resumeScanning,
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Escanear otro'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF0B6B45),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
+            color: Colores.tinta,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    resumen.estaVacio
+                        ? 'Apunta al código del producto'
+                        : 'Carrito: ${resumen.unidades} ${resumen.unidades == 1 ? 'unidad' : 'unidades'} · ${formatoPesos(importeDeCentavos(resumen.totalCentavos))}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colores.tinta,
+                    ),
+                    child: const Text('Listo, volver al carrito'),
+                  ),
                 ],
-              ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    cameraController.dispose();
-    super.dispose();
-  }
 }
 
-/// Mensaje que se muestra cuando la cámara no puede iniciarse (permiso denegado, sin cámara, etc.).
-class _CameraError extends StatelessWidget {
-  const _CameraError({required this.error});
-
-  final MobileScannerException error;
-
-  String get _message {
-    switch (error.errorCode) {
-      case MobileScannerErrorCode.permissionDenied:
-        return 'Falta el permiso de la cámara.\n'
-            'Actívalo en Ajustes > Aplicaciones > StockPilot > Permisos.';
-      case MobileScannerErrorCode.unsupported:
-        return 'Este dispositivo no tiene una cámara compatible con el escáner.';
-      default:
-        return 'No se pudo iniciar la cámara.\nCierra y vuelve a abrir la pantalla.';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF14173F), // color-tinta
-      alignment: Alignment.center,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.no_photography, color: Colors.white70, size: 56),
-          const SizedBox(height: 16),
-          Text(
-            _message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-          ),
-        ],
-      ),
-    );
-  }
-}
+enum _Aviso { exito, aviso, error }
