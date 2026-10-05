@@ -1,0 +1,31 @@
+{
+  "descripcion": "Estado de la caja con una sesión abierta.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/caja/sesion",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "active": true,
+      "session": {
+        "id_sesion": 1,
+        "id_tienda": 1,
+        "id_vendedor": 2,
+        "monto_apertura": "50000.00",
+        "monto_cierre_declarado": null,
+        "monto_cierre_calculado": null,
+        "diferencia": null,
+        "fecha_apertura": "2026-10-04T15:30:00.000Z",
+        "fecha_cierre": null,
+        "estado": "Abierta"
+      }
+    }
+  }
+}

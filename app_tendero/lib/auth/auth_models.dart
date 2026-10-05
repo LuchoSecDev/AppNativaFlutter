@@ -1,3 +1,5 @@
+export '../api/errores_de_api.dart' show ErrorDeApi;
+
 // Datos y resultados de la sesión, tal como los entrega la API (contrato: [S2], [S3], [S4], [S7]).
 
 /// El usuario que devuelve el login (`user` de `POST /api/login` y de `POST /api/2fa/verify`).
@@ -21,11 +23,11 @@ class UsuarioSesion {
   final bool needs2FASetup;
 
   factory UsuarioSesion.desdeJson(Map<String, dynamic> json) => UsuarioSesion(
-        nombres: json['nombres'] as String? ?? '',
-        rol: json['rol'] as String? ?? '',
-        cambioClaveForzoso: json['cambioClaveForzoso'] == true,
-        needs2FASetup: json['needs2FASetup'] == true,
-      );
+    nombres: json['nombres'] as String? ?? '',
+    rol: json['rol'] as String? ?? '',
+    cambioClaveForzoso: json['cambioClaveForzoso'] == true,
+    needs2FASetup: json['needs2FASetup'] == true,
+  );
 }
 
 /// Lo que devuelve `GET /api/session-info`: quién es el usuario y de qué tienda.
@@ -58,16 +60,16 @@ class InfoSesion {
   final bool needs2FASetup;
 
   factory InfoSesion.desdeJson(Map<String, dynamic> json) => InfoSesion(
-        userId: (json['userId'] as num?)?.toInt() ?? 0,
-        tiendaId: (json['tiendaId'] as num?)?.toInt() ?? 0,
-        tiendaNombre: json['tiendaNombre'] as String? ?? '',
-        limiteEgresoTendero: json['limiteEgresoTendero'] as String? ?? '0.00',
-        rol: json['rol'] as String? ?? '',
-        nombres: json['nombres'] as String? ?? '',
-        is2FAEnabled: json['is2FAEnabled'] == true,
-        cambioClaveForzoso: json['cambioClaveForzoso'] == true,
-        needs2FASetup: json['needs2FASetup'] == true,
-      );
+    userId: (json['userId'] as num?)?.toInt() ?? 0,
+    tiendaId: (json['tiendaId'] as num?)?.toInt() ?? 0,
+    tiendaNombre: json['tiendaNombre'] as String? ?? '',
+    limiteEgresoTendero: json['limiteEgresoTendero'] as String? ?? '0.00',
+    rol: json['rol'] as String? ?? '',
+    nombres: json['nombres'] as String? ?? '',
+    is2FAEnabled: json['is2FAEnabled'] == true,
+    cambioClaveForzoso: json['cambioClaveForzoso'] == true,
+    needs2FASetup: json['needs2FASetup'] == true,
+  );
 }
 
 /// Resultado de `POST /api/login`. `sealed` obliga a quien lo usa a cubrir TODOS los casos.
@@ -140,14 +142,4 @@ class ResultadoConexion {
   final String? error;
 
   bool get llego => estado != null;
-}
-
-/// Falla de red o del servidor (sin conexión, tiempo agotado, error 5xx...). Lleva un mensaje listo para
-/// mostrarle al usuario, en español y sin detalles técnicos.
-class ErrorDeApi implements Exception {
-  const ErrorDeApi(this.mensaje);
-  final String mensaje;
-
-  @override
-  String toString() => 'ErrorDeApi($mensaje)';
 }

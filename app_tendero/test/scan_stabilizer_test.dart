@@ -20,15 +20,18 @@ void main() {
       expect(s.register('AAA'), 'AAA');
     });
 
-    test('un código ya confirmado no se vuelve a confirmar hasta hacer reset', () {
-      final s = ScanStabilizer();
-      for (var i = 0; i < 2; i++) {
-        s.register('AAA');
-      }
-      expect(s.register('AAA'), 'AAA');
-      expect(s.register('AAA'), isNull);
-      expect(s.register('AAA'), isNull);
-    });
+    test(
+      'un código ya confirmado no se vuelve a confirmar hasta hacer reset',
+      () {
+        final s = ScanStabilizer();
+        for (var i = 0; i < 2; i++) {
+          s.register('AAA');
+        }
+        expect(s.register('AAA'), 'AAA');
+        expect(s.register('AAA'), isNull);
+        expect(s.register('AAA'), isNull);
+      },
+    );
 
     test('tras reset se puede confirmar de nuevo el mismo código («Escanear otro»)', () {
       final s = ScanStabilizer();
@@ -47,7 +50,10 @@ void main() {
     });
 
     test('requiredReads debe ser mayor que 0', () {
-      expect(() => ScanStabilizer(requiredReads: 0), throwsA(isA<AssertionError>()));
+      expect(
+        () => ScanStabilizer(requiredReads: 0),
+        throwsA(isA<AssertionError>()),
+      );
     });
   });
 }
