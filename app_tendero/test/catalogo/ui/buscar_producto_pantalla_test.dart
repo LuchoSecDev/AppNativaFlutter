@@ -135,6 +135,31 @@ void main() {
       },
     );
 
+    testWidgets('un producto con precio 0 se marca «Sin precio»', (
+      tester,
+    ) async {
+      await abrirBuscador(
+        tester,
+        (s) => s.programar(
+          'GET',
+          '/api/productos',
+          const RespuestaFalsa(200, [
+            {
+              'id_producto': 9,
+              'codigo': 'Z-9',
+              'nombre_producto': 'Producto sin precio',
+              'categoria': 'Varios',
+              'precio': '0.00',
+              'cantidad': 4,
+              'estado': 'Disponible',
+              'nivel_stock': 'ok',
+            },
+          ]),
+        ),
+      );
+      expect(find.text('Sin precio'), findsOneWidget);
+    });
+
     testWidgets('un producto inactivo no se ofrece', (tester) async {
       await abrirBuscador(tester, conLista);
       expect(find.text('Producto descontinuado'), findsNothing);
@@ -261,7 +286,7 @@ void main() {
     /// Abre la pantalla de elegir sobre un catálogo fijo, sin pasar por la sesión ni el servidor.
     Future<void> abrirElegir(
       WidgetTester tester,
-      void Function(Producto) alElegir,
+      String? Function(Producto) alElegir,
     ) async {
       final productos = [for (final j in _lista) Producto.desdeJson(j)];
       await tester.pumpWidget(
@@ -298,7 +323,10 @@ void main() {
       tester,
     ) async {
       Producto? elegido;
-      await abrirElegir(tester, (p) => elegido = p);
+      await abrirElegir(tester, (p) {
+        elegido = p;
+        return null; // acepta el producto
+      });
       expect(find.text('Elegir producto'), findsOneWidget);
       await tester.tap(find.text('Arroz Diana 1Kg'));
       await tester.pumpAndSettle();
@@ -307,13 +335,14 @@ void main() {
     });
 
     testWidgets(
-      'un producto AGOTADO no se puede elegir: avisa y se queda en la pantalla',
+      'si quien elige RECHAZA el producto, se muestra el motivo y se queda en la pantalla',
       (tester) async {
-        Producto? elegido;
-        await abrirElegir(tester, (p) => elegido = p);
+        await abrirElegir(
+          tester,
+          (p) => p.agotado ? '«${p.nombre}» está agotado.' : null,
+        );
         await tester.tap(find.text('Café Sello Rojo 250g'));
         await tester.pumpAndSettle();
-        expect(elegido, isNull);
         expect(find.textContaining('está agotado'), findsOneWidget);
         expect(find.text('Elegir producto'), findsOneWidget);
       },

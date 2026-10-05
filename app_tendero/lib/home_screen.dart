@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'auth/auth_providers.dart';
+import 'carrito/carrito_providers.dart';
+import 'carrito/ui/carrito_screen.dart';
 import 'caja/caja_providers.dart';
 import 'caja/ui/tarjeta_de_caja.dart';
 import 'catalogo/ui/buscar_producto_screen.dart';
 import 'scanner_screen.dart';
 import 'ui/colores.dart';
+import 'ui/dinero.dart';
+import 'ui/formato.dart';
 
 /// Pantalla de inicio una vez que hay sesión: quién entró, el estado de la caja y las acciones disponibles.
 class HomeScreen extends ConsumerWidget {
@@ -17,6 +21,7 @@ class HomeScreen extends ConsumerWidget {
     final estado = ref.watch(sesionProvider);
     final info = estado.info;
     final puedeVender = ref.watch(puedeVenderProvider);
+    final carrito = ref.watch(resumenCarritoProvider);
 
     return Scaffold(
       backgroundColor: Colores.papel,
@@ -55,11 +60,9 @@ class HomeScreen extends ConsumerWidget {
             // Solo se ofrece vender con la caja abierta (el servidor también lo exige: 403 sin caja abierta).
             FilledButton.icon(
               onPressed: puedeVender
-                  ? () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'La pantalla de venta llega en el siguiente paso.',
-                        ),
+                  ? () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const CarritoScreen(),
                       ),
                     )
                   : null,
@@ -72,6 +75,15 @@ class HomeScreen extends ConsumerWidget {
                 'Abre la caja para vender.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: Colores.tinta),
+              ),
+            ],
+            // Recordatorio: el carrito se guarda en el celular, así que puede haber una venta a medias.
+            if (!carrito.estaVacio) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Carrito: ${carrito.unidades} ${carrito.unidades == 1 ? 'unidad' : 'unidades'} · ${formatoPesos(importeDeCentavos(carrito.totalCentavos))}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: Colores.tinta),
               ),
             ],
             const SizedBox(height: 16),

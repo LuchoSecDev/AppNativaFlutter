@@ -16,6 +16,16 @@ Pruebas hechas con la app real en un celular, contra el servidor desplegado. Cad
 
 *(Reportado por el responsable de la prueba. Anotar el modelo del celular en las próximas filas.)*
 
+## Pendiente de probar en celular: carrito (paso 4, subpaso 2)
+- Con la caja abierta, **Vender** abre el carrito. Vacío: «El carrito está vacío».
+- **Agregar producto** abre el buscador; al tocar uno vuelve al carrito con la línea, el total y el aviso «Agregado: …».
+- **Más** y **Menos** cambian la cantidad y el total; **Menos** no baja de 1; **Más** no pasa del stock y avisa.
+- **Quitar** y **Vaciar carrito** (con confirmación).
+- Un producto **agotado** o **sin precio (0)** no se puede agregar y explica por qué.
+- **Persistencia:** con productos en el carrito, cerrar la app del todo y reabrirla: el carrito sigue ahí y el inicio dice «Carrito: N unidades · $total».
+- **Sesión caducada a mitad de una venta:** al volver a entrar con la MISMA cuenta, el carrito se recupera. Con OTRA cuenta no se ve.
+- Cambiar un precio o el stock desde la web y refrescar el catálogo: el total del carrito debe cambiar solo.
+
 ## Pendiente de probar en celular: catálogo (paso 4, subpaso 1)
 - Desde el inicio, **Consultar productos**: debe mostrar los productos de la tienda con precio en pesos y stock, ordenados por nombre.
 - **Buscar:** escribir parte de un nombre (con y sin tildes, en mayúsculas o minúsculas), una categoría, un código interno y un código de barras. Con varias palabras, cada una debe aparecer.

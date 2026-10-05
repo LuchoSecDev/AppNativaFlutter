@@ -3,10 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'api/api_client.dart';
 import 'api/cookie_jar_factory.dart';
 import 'auth/auth_providers.dart';
 import 'auth/ui/auth_gate.dart';
+import 'carrito/almacen_carrito.dart';
+import 'carrito/carrito_providers.dart';
 import 'config/app_config.dart';
 import 'scanner_screen.dart';
 
@@ -32,6 +36,9 @@ Future<void> main() async {
     onSessionExpired: () => caducidad.add(null),
   );
 
+  // Almacenamiento local del celular, donde se guarda el carrito de la venta en curso.
+  final preferencias = await SharedPreferences.getInstance();
+
   runApp(
     // ProviderScope es donde viven los providers de Riverpod. Aquí se les entregan las piezas reales (cliente HTTP
     // y canal de caducidad) que `auth_providers.dart` declara pero no sabe crear.
@@ -39,6 +46,9 @@ Future<void> main() async {
       overrides: [
         dioProvider.overrideWithValue(dio),
         sesionCaducadaProvider.overrideWithValue(caducidad.stream),
+        almacenCarritoProvider.overrideWithValue(
+          AlmacenCarritoLocal(preferencias),
+        ),
       ],
       child: const MyApp(),
     ),
