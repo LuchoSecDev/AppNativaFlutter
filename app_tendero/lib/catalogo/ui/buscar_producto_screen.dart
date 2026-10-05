@@ -46,7 +46,7 @@ class _BuscarProductoScreenState extends ConsumerState<BuscarProductoScreen> {
           .showSnackBar(SnackBar(content: Text(rechazo)));
       return;
     }
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(producto);
   }
 
   void _mostrarDatos(Producto p) {

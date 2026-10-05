@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'scan_stabilizer.dart';
+import 'catalogo/catalogo_providers.dart';
+import 'carrito/carrito_providers.dart';
+import 'carrito/carrito_models.dart';
+import 'catalogo/ui/buscar_producto_screen.dart';
+import 'catalogo/producto.dart';
 
 /// Interruptor de la zona de lectura. `true`: el lector solo analiza lo que está dentro del recuadro.
 /// `false`: analiza toda la imagen de la cámara (el comportamiento anterior).
 const bool _usarVentanaDeEscaneo = true;
 
-class ScannerScreen extends StatefulWidget {
+class ScannerScreen extends ConsumerStatefulWidget {
   const ScannerScreen({super.key});
 
   @override
-  State<ScannerScreen> createState() => _ScannerScreenState();
+  ConsumerState<ScannerScreen> createState() => _ScannerScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen>
+class _ScannerScreenState extends ConsumerState<ScannerScreen>
     with SingleTickerProviderStateMixin {
   final MobileScannerController cameraController = MobileScannerController(
     detectionSpeed: DetectionSpeed.normal,
@@ -46,8 +52,10 @@ class _ScannerScreenState extends State<ScannerScreen>
     )..repeat(reverse: true);
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    if (isPaused) return;
+  bool _procesando = false;
+
+  void _onDetect(BarcodeCapture capture) async {
+    if (isPaused || _procesando) return;
 
     final List<Barcode> barcodes = capture.barcodes;
     if (barcodes.isEmpty) return;
@@ -61,8 +69,119 @@ class _ScannerScreenState extends State<ScannerScreen>
       setState(() {
         confirmedCode = confirmed;
         isPaused = true;
+        _procesando = true;
       });
       _animationController.stop();
+
+      final repo = ref.read(catalogoRepositoryProvider);
+      try {
+        final producto = await repo.buscarPorCodigoBarras(confirmed);
+        if (!mounted) return;
+        if (producto != null) {
+          final res = ref.read(carritoProvider.notifier).agregar(producto);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res == ResultadoAgregar.agregado ? 'Agregado al carrito' : 'No se pudo agregar: ${res.name}'),
+              backgroundColor: const Color(0xFF0B6B45),
+            ),
+          );
+        } else {
+          // Mostrar diálogo para vincular
+          _mostrarVincularCodigo(confirmed);
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      } finally {
+        if (mounted) setState(() => _procesando = false);
+      }
+    }
+  }
+
+  void _mostrarVincularCodigo(String code) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Código no encontrado'),
+        content: Text('El código $code no está vinculado a ningún producto. ¿Deseas vincularlo ahora?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resumeScanning();
+            },
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _seleccionarParaVincular(code);
+            },
+            child: const Text('Vincular'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _seleccionarParaVincular(String code) async {
+    // Import needed at the top: import 'catalogo/ui/buscar_producto_screen.dart';
+    final producto = await Navigator.push<Producto>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BuscarProductoScreen(
+          alElegir: (p) => null, // Acepta cualquiera, o podríamos restringir
+        ),
+      ),
+    );
+
+    if (producto == null) {
+      _resumeScanning();
+      return;
+    }
+
+    if (!mounted) return;
+
+    setState(() => _procesando = true);
+    final repo = ref.read(catalogoRepositoryProvider);
+    try {
+      await repo.vincularCodigoBarras(producto.id, code);
+      if (!mounted) return;
+      
+      // Actualizar el catálogo
+      await ref.read(catalogoProvider.notifier).cargar();
+      
+      if (!mounted) return;
+      // Y agregar al carrito (usamos el producto original ya que la estructura base es la misma
+      // o buscamos el nuevo en el catálogo). Mejor el producto con el código añadido.
+      final pActualizado = Producto(
+        id: producto.id,
+        codigo: producto.codigo,
+        codigoBarras: code,
+        nombre: producto.nombre,
+        categoria: producto.categoria,
+        precio: producto.precio,
+        cantidad: producto.cantidad,
+        estado: producto.estado,
+        nivelStock: producto.nivelStock,
+      );
+      final res = ref.read(carritoProvider.notifier).agregar(pActualizado);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vinculado y ${res == ResultadoAgregar.agregado ? 'agregado' : 'no agregado (${res.name})'}'),
+          backgroundColor: const Color(0xFF0B6B45),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al vincular: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) _resumeScanning();
     }
   }
 
@@ -71,6 +190,7 @@ class _ScannerScreenState extends State<ScannerScreen>
     setState(() {
       isPaused = false;
       confirmedCode = null;
+      _procesando = false;
     });
     _animationController.repeat(reverse: true);
   }

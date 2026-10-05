@@ -13,6 +13,11 @@ void main() {
 
   setUp(() {
     servidor = ServidorFalso();
+    servidor.programar(
+      'GET',
+      '/api/csrf-token',
+      RespuestaFalsa.deEjemplo('04_S1_csrf_token'),
+    );
     repo = CatalogoRepository(
       crearClienteApi(
         baseUrl: 'https://servidor.test',
@@ -120,5 +125,73 @@ void main() {
       const RespuestaFalsa(500, {'error': 'x'}),
     );
     await expectLater(repo.listar(), throwsA(isA<ErrorDeApi>()));
+  });
+
+  group('buscarPorCodigoBarras', () {
+    test('si el producto existe, devuelve el producto parseado', () async {
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/12345',
+        const RespuestaFalsa(200, {
+          'success': true,
+          'producto': {
+            'id_producto': 10,
+            'nombre_producto': 'Pan',
+            'precio': '2000.00',
+          }
+        }),
+      );
+      final p = await repo.buscarPorCodigoBarras('12345');
+      expect(p, isNotNull);
+      expect(p!.id, 10);
+      expect(p.nombre, 'Pan');
+    });
+
+    test('si devuelve 404, devuelve null sin lanzar error', () async {
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/inexistente',
+        const RespuestaFalsa(404, {'success': false, 'error': 'No encontrado'}),
+      );
+      final p = await repo.buscarPorCodigoBarras('inexistente');
+      expect(p, isNull);
+    });
+
+    test('falla de red lanza ErrorDeApi', () async {
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/555',
+        const RespuestaFalsa.falloDeRed(DioExceptionType.connectionError),
+      );
+      await expectLater(repo.buscarPorCodigoBarras('555'), throwsA(isA<ErrorDeApi>()));
+    });
+  });
+
+  group('vincularCodigoBarras', () {
+    test('llamada exitosa completa sin lanzar nada', () async {
+      servidor.programar(
+        'PUT',
+        '/api/productos/10/link-barcode',
+        const RespuestaFalsa(200, {'success': true}),
+      );
+      await repo.vincularCodigoBarras(10, '12345');
+      final req = servidor.peticiones.last;
+      expect(req.cuerpo, {'codigo_barras': '12345'});
+    });
+
+    test('si da 409 (duplicado), lanza ErrorDeApi con el mensaje del servidor', () async {
+      servidor.programar(
+        'PUT',
+        '/api/productos/10/link-barcode',
+        const RespuestaFalsa(409, {
+          'success': false,
+          'error': 'Ese código ya pertenece a «Arroz».',
+        }),
+      );
+      await expectLater(
+        repo.vincularCodigoBarras(10, '12345'),
+        throwsA(isA<ErrorDeApi>().having((e) => e.mensaje, 'mensaje', contains('Arroz'))),
+      );
+    });
   });
 }

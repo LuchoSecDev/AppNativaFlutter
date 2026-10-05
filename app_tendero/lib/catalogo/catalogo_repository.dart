@@ -26,4 +26,35 @@ class CatalogoRepository {
       throw ErrorDeApi(mensajeDeFalla(e));
     }
   }
+
+  /// `GET /api/productos/barcode/:code`. Busca un producto por código o código de barras.
+  /// Si existe devuelve el producto, si es 404 devuelve `null`.
+  Future<Producto?> buscarPorCodigoBarras(String code) async {
+    try {
+      final r = await _dio.get<dynamic>('/api/productos/barcode/$code');
+      final datos = r.data;
+      if (datos is! Map<String, dynamic> || !datos.containsKey('producto')) {
+        throw const ErrorDeApi(respuestaInesperada);
+      }
+      return Producto.desdeJson(datos['producto'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      throw ErrorDeApi(mensajeDeFalla(e));
+    }
+  }
+
+  /// `PUT /api/productos/:id/link-barcode`. Vincula un código de barras nuevo a un producto existente.
+  Future<void> vincularCodigoBarras(int productoId, String codigoBarras) async {
+    try {
+      await _dio.put<dynamic>(
+        '/api/productos/$productoId/link-barcode',
+        data: {'codigo_barras': codigoBarras},
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        throw ErrorDeApi(mensajeDelServidor(e.response?.data) ?? mensajeDeFalla(e));
+      }
+      throw ErrorDeApi(mensajeDeFalla(e));
+    }
+  }
 }
