@@ -1,0 +1,74 @@
+{
+  "descripcion": "Todos los productos de la tienda. Un Tendero NO recibe costo_compra ni clasificacion_abc.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/productos",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": [
+      {
+        "id_producto": 2,
+        "codigo": "ACE-001",
+        "codigo_barras": null,
+        "nombre_producto": "Aceite Gourmet 1L",
+        "categoria": "Aceites",
+        "subcategoria": null,
+        "tipo_producto": "Normal",
+        "precio": "12000.00",
+        "cantidad": 5,
+        "stock_minimo": 2,
+        "stock_maximo": 200,
+        "stock_seguridad": 2,
+        "lead_time": 3,
+        "fecha_entrada": "2026-10-04T15:30:00.000Z",
+        "fecha_salida": null,
+        "estado": "Disponible",
+        "id_tienda": 1,
+        "id_proveedor": null,
+        "fecha_vencimiento": null,
+        "frecuencia_compra_dias": 7,
+        "precio_original": null,
+        "fecha_fin_promocion": null,
+        "velocity": "0.00000000000000000000",
+        "velocity_7d": "0.00000000000000000000",
+        "nivel_stock": "ok",
+        "urgencia": "Puede esperar"
+      },
+      {
+        "id_producto": 1,
+        "codigo": "ARR-001",
+        "codigo_barras": "7701234000011",
+        "nombre_producto": "Arroz Diana 1Kg",
+        "categoria": "Granos",
+        "subcategoria": null,
+        "tipo_producto": "Normal",
+        "precio": "4500.00",
+        "cantidad": 10,
+        "stock_minimo": 2,
+        "stock_maximo": 200,
+        "stock_seguridad": 2,
+        "lead_time": 3,
+        "fecha_entrada": "2026-10-04T15:30:00.000Z",
+        "fecha_salida": null,
+        "estado": "Disponible",
+        "id_tienda": 1,
+        "id_proveedor": null,
+        "fecha_vencimiento": null,
+        "frecuencia_compra_dias": 7,
+        "precio_original": null,
+        "fecha_fin_promocion": null,
+        "velocity": "0.00000000000000000000",
+        "velocity_7d": "0.00000000000000000000",
+        "nivel_stock": "ok",
+        "urgencia": "Puede esperar"
+      }
+    ]
+  }
+}
