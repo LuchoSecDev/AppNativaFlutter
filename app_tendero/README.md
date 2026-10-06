@@ -3,7 +3,7 @@
 App nativa (Flutter, Android primero) para que el Tendero de una tienda de barrio venda, abra y cierre caja desde el celular. Se conecta a la API del backend de StockPilot.
 
 - **Identificador:** `com.lem.stockpilot` (`lem` son las iniciales del equipo fundador; no se cambia).
-- **Estado:** en construcción. Hay escáner de prueba (paso 1), la sesión completa (paso 2: login, segundo factor, primer cambio de contraseña y cerrar sesión) la apertura de caja (paso 3) y la consulta de productos con búsqueda por nombre, categoría o código (paso 4, subpaso 1) el carrito de la venta, guardado en el celular (paso 4, subpaso 2) y el cobro en efectivo con `Idempotency-Key` (paso 4, subpaso 3). La guía de construcción define el orden de lo que sigue.
+- **Estado:** en construcción. Hecho: sesión completa (login, segundo factor, primer cambio de contraseña), caja (abrir y cerrar con arqueo previo y desglose por método de pago), catálogo y búsqueda, carrito guardado en el celular, cobro en efectivo con `Idempotency-Key`, escáner dentro de la venta y «actualizar» al volver a la app. Falta: egresos, recibir mercancía, alertas, ventas del turno, y vender con tarjeta, transferencia y fiado. El orden y los criterios están en `guia_construccion_app.md` (backend); **quién hace qué y cómo subirlo está en [`docs/guia_del_equipo.md`](../docs/guia_del_equipo.md)**.
 
 ## Documentación (vive en el repositorio del backend, `StockPilot`, carpeta `docs/`)
 - `guia_construccion_app.md`: por dónde empezar y cuándo se da cada paso por terminado.
@@ -30,3 +30,5 @@ La cámara solo se puede probar en un celular real. Versión de Flutter con la q
 - **Este repositorio es público.** Nada de contraseñas, claves, cookies, llaves de firma (`*.jks`, `key.properties`) ni la URL del servidor de pruebas en el código; la URL va en configuración local fuera de Git.
 - **Trabaja en una ruta sin tildes ni espacios** (por ejemplo `C:\Estudio\AppNativaFlutter`): con una tilde en la ruta, el analizador de Flutter falla en Windows.
 - El estado se maneja con `flutter_riverpod`; los widgets no llaman al servidor directamente.
+- **Nunca se sube a `main`:** una rama por tarea, PR en borrador y solo Lucho mezcla (ver `docs/guia_del_equipo.md`).
+- Las pruebas deben demostrar que detectan errores: `dart run tool/mutar.dart tool/mutaciones/<tarea>.json`.

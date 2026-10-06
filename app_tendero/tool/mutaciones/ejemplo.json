@@ -1,0 +1,14 @@
+[
+  {
+    "nombre": "EJ01 el carrito no se vacía al registrarse la venta",
+    "archivo": "lib/venta/venta_providers.dart",
+    "patron": "ref\\.read\\(carritoProvider\\.notifier\\)\\.vaciar\\(\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EJ02 el efectivo no se compara contra el total",
+    "archivo": "lib/venta/venta_providers.dart",
+    "patron": "efectivoRecibido \\* 100 < resumen\\.totalCentavos",
+    "reemplazo": "false"
+  }
+]
