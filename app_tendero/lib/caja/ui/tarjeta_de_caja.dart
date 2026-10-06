@@ -7,6 +7,7 @@ import '../../ui/piezas_de_pantalla.dart';
 import '../../ui/reloj.dart';
 import '../caja_providers.dart';
 import 'abrir_caja_screen.dart';
+import 'cerrar_caja_screen.dart';
 
 /// La tarjeta de la pantalla de inicio que muestra el estado de la caja: cargando, cerrada (con el botón para
 /// abrirla), abierta (con el efectivo inicial y la hora) o con error (con «Reintentar»).
@@ -103,7 +104,7 @@ class TarjetaDeCaja extends ConsumerWidget {
               )) ...[
                 const SizedBox(height: 12),
                 const CuadroDeMensaje(
-                  'Esta caja se abrió en un día anterior. Ciérrala (por ahora, desde la web) antes de empezar el turno de hoy.',
+                  'Esta caja se abrió en un día anterior. Ciérrala antes de empezar el turno de hoy.',
                   esError: false,
                 ),
               ],
@@ -111,6 +112,16 @@ class TarjetaDeCaja extends ConsumerWidget {
                 const SizedBox(height: 12),
                 CuadroDeMensaje(caja.mensaje!, esError: false),
               ],
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const CerrarCajaScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.lock_outline),
+                label: const Text('Cerrar caja'),
+              ),
             ],
           },
         ),

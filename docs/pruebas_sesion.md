@@ -17,6 +17,19 @@ Pruebas hechas con la app real en un celular, contra el servidor desplegado. Cad
 
 *(Reportado por el responsable de la prueba. Anotar el modelo del celular en las próximas filas.)*
 
+## Pendiente de probar en celular: cierre de caja con arqueo previo (paso 5)
+Necesita el backend con `[K5]` desplegado (rama `feat/caja-arqueo-previo`). Con la caja abierta y algunas ventas en efectivo, un egreso y, si se puede, una venta con tarjeta. **Contrastar siempre en la web** (historial de caja).
+1. **Botón «Cerrar caja»** en la tarjeta de la caja del inicio (solo con la caja abierta).
+2. **Paso 1:** el campo solo admite números (máximo 9 dígitos). Sin escribir nada, **Ver arqueo** pide el monto. El **0** es válido.
+3. **Paso 2 (arqueo, no cierra nada):** muestra fondo inicial, ventas en efectivo, abonos, egresos, **«Debería haber»**, **«Tú contaste»** y **Cuadra / Sobra / Falta** con su color. Comprobar que la cuenta coincide con la web y que **la venta con tarjeta NO suma**. La caja sigue abierta (se ve en la web).
+4. **Recontar:** vuelve al campo con lo escrito; se puede cambiar y volver a ver el arqueo.
+5. **Confirmar cierre:** comprobante «Caja cerrada» con el arqueo final; **Volver al inicio**: la tarjeta dice «Caja cerrada» y **Vender** queda bloqueado. En la web el cierre aparece con el monto confirmado.
+6. **Algo cambia mientras se revisa:** en el paso 2, registrar otra venta en efectivo desde la web y confirmar: avisa «Mientras revisabas se registró un movimiento» y muestra el arqueo FINAL.
+7. **Caja cerrada en la web a mitad del cierre:** al ver el arqueo o al confirmar, dice que no hay caja abierta y el inicio se actualiza solo.
+8. **Sin conexión:** al pedir el arqueo, mensaje claro y se puede reintentar. Al confirmar con la red cortada: **no reenvía el cierre**; consulta la caja y dice si se cerró o si sigue abierta. Si tampoco hay red: «sin confirmar» con el botón **Comprobar** (nunca «Confirmar» otra vez).
+9. **Venta sin confirmar:** con un cobro sin resolver (cortar la red al cobrar), **Ver arqueo** y **Confirmar cierre** deben negarse y pedir resolverlo primero.
+10. **Salir a media revisión** y volver a entrar: empieza de cero (paso 1, campo vacío).
+
 ## Pendiente de probar en celular: cobro en efectivo (paso 4, subpaso 3)
 Con la caja abierta y productos en el carrito. **Cada prueba que toca el dinero se contrasta en la web** (ventas, stock y arqueo).
 1. **Cobro normal:** **Cobrar en efectivo** → «Verificando los precios…» → total correcto. Escribir un monto mayor: aparece «Cambio: $…». **Confirmar cobro** → comprobante «Venta registrada», con el número, el efectivo recibido y el cambio. En la web: la venta existe **una sola vez**, con el canal «app», y el stock bajó.

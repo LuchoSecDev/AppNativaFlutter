@@ -1,0 +1,34 @@
+{
+  "descripcion": "Cierre de caja con el efectivo contado. Devuelve el arqueo: diferencia = declarado − calculado.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/caja/cerrar",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "monto_cierre_declarado": 57500
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "message": "Caja cerrada exitosamente (Arqueo completo)",
+      "arqueo": {
+        "monto_apertura": 50000,
+        "ventas_efectivo": 9000,
+        "abonos_efectivo": 0,
+        "egresos": 10000,
+        "monto_cierre_calculado": 49000,
+        "monto_cierre_declarado": 57500,
+        "diferencia": 8500
+      }
+    }
+  }
+}

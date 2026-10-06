@@ -53,6 +53,63 @@ class CajaRepository {
     }
   }
 
+  /// [K5] `POST /api/caja/arqueo-previo`: el arqueo con lo que el Tendero contó, SIN cerrar la caja ni guardar nada. Es de
+  /// solo lectura, así que repetirlo ante un fallo de red es seguro. [declaradoPesos]: pesos enteros.
+  Future<ResultadoArqueo> verArqueo(int declaradoPesos) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        '/api/caja/arqueo-previo',
+        data: {'monto_cierre_declarado': declaradoPesos},
+      );
+      final arqueo = ArqueoCaja.desdeJson(_mapa(r.data)['arqueo']);
+      if (arqueo == null) {
+        throw const ErrorDeApi(respuestaInesperada);
+      }
+      return ArqueoCalculado(arqueo);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        final mensaje =
+            mensajeDelServidor(e.response?.data) ??
+            'No se pudo calcular el arqueo.';
+        return ArqueoRechazado(
+          mensaje,
+          sinCajaAbierta: mensaje.contains('No hay ninguna caja abierta'),
+        );
+      }
+      throw ErrorDeApi(mensajeDeFalla(e));
+    }
+  }
+
+  /// [K3] `POST /api/caja/cerrar` con lo que el Tendero contó (pesos enteros). El servidor recalcula el arqueo.
+  ///
+  /// SIN idempotencia: enviarlo dos veces cierra otra caja o da error. Ante un tiempo de espera (`ErrorDeApi`) NO se
+  /// repite: primero se consulta [consultarSesion] para saber si se cerró.
+  Future<ResultadoCierre> cerrar(int declaradoPesos) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        '/api/caja/cerrar',
+        data: {'monto_cierre_declarado': declaradoPesos},
+      );
+      final cuerpo = r.data;
+      return CierreExitoso(
+        cuerpo is Map<String, dynamic>
+            ? ArqueoCaja.desdeJson(cuerpo['arqueo'])
+            : null,
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        final mensaje =
+            mensajeDelServidor(e.response?.data) ??
+            'No se pudo cerrar la caja.';
+        return CierreRechazado(
+          mensaje,
+          sinCajaAbierta: mensaje.contains('No hay ninguna caja abierta'),
+        );
+      }
+      throw ErrorDeApi(mensajeDeFalla(e));
+    }
+  }
+
   // ───────────────────────── utilidades ─────────────────────────
 
   Map<String, dynamic> _mapa(dynamic datos) {
