@@ -50,10 +50,12 @@ class TarjetaDeCaja extends ConsumerWidget {
               ),
             ],
             FaseCaja.cerrada => [
-              const _Titulo(
+              _Titulo(
                 icono: Icons.lock_outline,
                 texto: 'Caja cerrada',
                 color: Colores.aviso,
+                alActualizar: () =>
+                    ref.read(cajaProvider.notifier).actualizar(),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -75,10 +77,12 @@ class TarjetaDeCaja extends ConsumerWidget {
               ),
             ],
             FaseCaja.abierta => [
-              const _Titulo(
+              _Titulo(
                 icono: Icons.lock_open,
                 texto: 'Caja abierta',
                 color: Colores.exito,
+                alActualizar: () =>
+                    ref.read(cajaProvider.notifier).actualizar(),
               ),
               const SizedBox(height: 4),
               Text(
@@ -120,11 +124,15 @@ class _Titulo extends StatelessWidget {
     required this.icono,
     required this.texto,
     required this.color,
+    required this.alActualizar,
   });
 
   final IconData icono;
   final String texto;
   final Color color;
+
+  /// Vuelve a consultar la caja: puede haber cambiado desde la web.
+  final VoidCallback alActualizar;
 
   @override
   Widget build(BuildContext context) {
@@ -132,13 +140,21 @@ class _Titulo extends StatelessWidget {
       children: [
         Icon(icono, color: color),
         const SizedBox(width: 8),
-        Text(
-          texto,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: color,
+        Expanded(
+          child: Text(
+            texto,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
+        ),
+        IconButton(
+          tooltip: 'Actualizar la caja',
+          icon: const Icon(Icons.refresh),
+          color: Colores.tinta,
+          onPressed: alActualizar,
         ),
       ],
     );

@@ -33,6 +33,18 @@ Con la caja abierta y productos en el carrito. **Cada prueba que toca el dinero 
 12. **Stock insuficiente:** bajar el stock en la web por debajo de lo que hay en el carrito y cobrar: el servidor lo rechaza con el nombre del producto; el carrito se conserva.
 13. **Cierre de caja (web o servidor):** el efectivo de las ventas cobradas desde la app debe sumar en el arqueo.
 
+## Pendiente de probar en celular: actualizar la caja y los productos (cambios hechos en la web)
+La app no se entera sola de lo que pasa en la web: vuelve a preguntar al servidor en estos momentos.
+1. **Cerrar la caja en la web y volver a la app** (dejarla en segundo plano y traerla de vuelta): el inicio debe pasar solo a «Caja cerrada», con el aviso «se cerró desde otro lugar», y **Vender** quedar bloqueado. Sin cerrar la app.
+2. **Abrir la caja en la web y volver a la app:** debe pasar a «Caja abierta» y habilitar **Vender**.
+3. **Tirar hacia abajo** en el inicio: actualiza la caja y los productos.
+4. **Botón de actualizar** (flecha circular) en la tarjeta de la caja, con la caja abierta y con la caja cerrada.
+5. **En el carrito:** botón de actualizar en la barra: avisa «Actualizado.» y refleja una caja cerrada (el escáner y el cobro se bloquean).
+6. **En «Consultar productos» y en «Elegir producto»:** botón de actualizar en la barra (además de tirar hacia abajo). Cambiar un precio o un stock en la web y comprobar que aparece.
+7. **Sin conexión** (modo avión) al volver a la app o al actualizar: no debe marcar la caja como cerrada ni como error; si fue con el botón, avisa «No se pudo actualizar. Revisa tu conexión.».
+8. **Cobrar con la caja ya cerrada en la web** (sin haber actualizado): el servidor lo rechaza con «Debes abrir tu caja antes de realizar ventas.» y la app actualiza la caja sola.
+9. **Sesión caducada** (más de 30 minutos en segundo plano): al volver, debe llevar al login con su aviso, sin quedarse colgada.
+
 ## Pendiente de probar en celular: escáner en la venta (paso 4, subpaso 4)
 Con la caja abierta. Lo que **solo** se ve con la cámara real es lo más importante de esta lista.
 1. **Primer producto:** con el carrito **vacío** debe verse **Escanear producto** (activo con caja abierta; bloqueado y con «Abre la caja para escanear» sin caja). También aparece con el carrito con productos, junto a **Buscar manualmente**.

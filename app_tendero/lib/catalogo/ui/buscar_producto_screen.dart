@@ -5,6 +5,7 @@ import '../../ui/colores.dart';
 import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
+import '../../ui/refrescar.dart';
 import '../buscar_productos.dart';
 import '../catalogo_providers.dart';
 import '../producto.dart';
@@ -93,6 +94,13 @@ class _BuscarProductoScreenState extends ConsumerState<BuscarProductoScreen> {
       backgroundColor: Colores.papel,
       appBar: AppBar(
         title: Text(widget.alElegir == null ? 'Productos' : 'Elegir producto'),
+        actions: [
+          IconButton(
+            tooltip: 'Actualizar la lista',
+            icon: const Icon(Icons.refresh),
+            onPressed: () => refrescarConAviso(context, ref),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(

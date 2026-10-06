@@ -7,6 +7,7 @@ import '../../ui/colores.dart';
 import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
+import '../../ui/refrescar.dart';
 import '../../venta/ui/cobrar_efectivo_screen.dart';
 import '../../venta/ui/escaner_venta_screen.dart';
 import '../../venta/venta_providers.dart';
@@ -118,6 +119,12 @@ class CarritoScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('Carrito'),
           actions: [
+            if (!cobro.bloqueaElCarrito)
+              IconButton(
+                tooltip: 'Actualizar caja y precios',
+                icon: const Icon(Icons.refresh),
+                onPressed: () => refrescarConAviso(context, ref),
+              ),
             if (!resumen.estaVacio && !cobro.bloqueaElCarrito)
               IconButton(
                 tooltip: 'Vaciar carrito',

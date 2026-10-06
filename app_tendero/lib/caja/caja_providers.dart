@@ -85,12 +85,17 @@ class CajaNotifier extends Notifier<EstadoCaja> {
 
   bool _obsoleto(int generacion) => generacion != _generacion || !ref.mounted;
 
+  /// La actualización silenciosa en curso, si la hay: dos pedidas a la vez (volver a la app y tirar para actualizar)
+  /// comparten una sola consulta.
+  Future<void>? _actualizacionEnCurso;
+
   @override
   EstadoCaja build() {
     // `watch` hace que build() se ejecute DE NUEVO cada vez que cambia la fase de la sesión. Así, al cerrar
     // sesión la caja se reinicia sola y no queda a la vista la de la cuenta anterior.
     final fase = ref.watch(sesionProvider.select((e) => e.fase));
     _generacion++;
+    _actualizacionEnCurso = null;
     if (fase == FaseSesion.activa) {
       Future.microtask(cargar);
     }
@@ -104,6 +109,47 @@ class CajaNotifier extends Notifier<EstadoCaja> {
     final g = _generacion;
     state = const EstadoCaja.cargando();
     await _leerEstado(g);
+  }
+
+  /// [K1] Vuelve a preguntar por la caja SIN mostrar «cargando», para saber si cambió fuera de la app (alguien la cerró
+  /// o la abrió desde la web). Se usa al volver a la app y al pedir «actualizar».
+  ///
+  /// A diferencia de [cargar]: no apaga el botón de vender mientras espera, y si no hay red CONSERVA lo que se veía
+  /// (el servidor igual rechaza una venta sin caja abierta). No hace nada mientras se abre la caja.
+  Future<void> actualizar() {
+    if (state.trabajando || state.fase == FaseCaja.cargando) {
+      return Future.value();
+    }
+    final g = _generacion;
+    return _actualizacionEnCurso ??= _actualizar(g).whenComplete(() {
+      if (g == _generacion) {
+        _actualizacionEnCurso = null;
+      }
+    });
+  }
+
+  Future<void> _actualizar(int g) async {
+    try {
+      final sesion = await _repo.consultarSesion();
+      // Si mientras tanto empezó a abrirse la caja, esa operación manda: no se pisa su estado.
+      if (_obsoleto(g) || state.trabajando) {
+        return;
+      }
+      if (sesion == null) {
+        if (state.fase == FaseCaja.abierta) {
+          state = const EstadoCaja.cerrada(
+            mensaje: 'La caja ya no está abierta: se cerró desde otro lugar (por ejemplo, la web).',
+          );
+        } else if (state.fase == FaseCaja.error) {
+          state = const EstadoCaja.cerrada();
+        }
+      } else if (state.fase != FaseCaja.abierta ||
+          state.sesion?.idSesion != sesion.idSesion) {
+        state = EstadoCaja.abierta(sesion);
+      }
+    } on ErrorDeApi {
+      // Sin red o con el servidor caído: se sigue mostrando lo que ya se sabía.
+    }
   }
 
   /// [K2] Abre la caja con el efectivo inicial, en pesos enteros (el 0 es válido).

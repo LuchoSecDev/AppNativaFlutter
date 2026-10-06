@@ -294,6 +294,199 @@ void main() {
     });
   });
 
+  // La caja puede cambiar fuera de la app (alguien la cierra o la abre desde la web). `actualizar` vuelve a preguntar
+  // sin mostrar «cargando» (para no apagar el botón de vender a cada vuelta) y, si no hay red, conserva lo que se veía.
+  group('actualizar (silencioso)', () {
+    // Lo que respondería el servidor si la caja estuviera abierta (con otro número de sesión, para distinguirla).
+    const cajaAbiertaDeOtraCuenta = {
+      'active': true,
+      'session': {
+        'id_sesion': 99,
+        'monto_apertura': '70000.00',
+        'fecha_apertura': '2026-10-04T15:30:00.000Z',
+      },
+    };
+
+    Future<void> conCaja(String ejemplo) async {
+      servidor.programar(
+        'GET',
+        '/api/caja/sesion',
+        RespuestaFalsa.deEjemplo(ejemplo),
+      );
+      await conSesionActiva();
+      await hastaQueCargue();
+    }
+
+    List<FaseCaja> observarFases() {
+      final fases = <FaseCaja>[];
+      contenedor.listen(cajaProvider, (_, nuevo) => fases.add(nuevo.fase));
+      return fases;
+    }
+
+    test('abierta y el servidor dice «cerrada» (se cerró en la web): pasa a cerrada, lo explica y no pasa por «cargando»', () async {
+      await conCaja('10_K1_caja_abierta');
+      final fases = observarFases();
+      servidor.programar(
+        'GET',
+        '/api/caja/sesion',
+        RespuestaFalsa.deEjemplo('07_K1_caja_sin_abrir'),
+      );
+
+      await caja().actualizar();
+
+      expect(estado().fase, FaseCaja.cerrada);
+      expect(estado().mensaje, contains('cerró'));
+      expect(contenedor.read(puedeVenderProvider), isFalse);
+      expect(fases, isNot(contains(FaseCaja.cargando)));
+    });
+
+    test('cerrada y el servidor dice «abierta» (se abrió en la web): pasa a abierta y ya se puede vender', () async {
+      await conCaja('07_K1_caja_sin_abrir');
+      servidor.programar(
+        'GET',
+        '/api/caja/sesion',
+        RespuestaFalsa.deEjemplo('10_K1_caja_abierta'),
+      );
+      await caja().actualizar();
+      expect(estado().fase, FaseCaja.abierta);
+      expect(estado().sesion!.idSesion, 1);
+      expect(contenedor.read(puedeVenderProvider), isTrue);
+    });
+
+    test('sin cambios: sigue igual, sin parpadeo y sin avisos', () async {
+      await conCaja('10_K1_caja_abierta');
+      final fases = observarFases();
+      await caja().actualizar();
+      expect(estado().fase, FaseCaja.abierta);
+      expect(estado().mensaje, isNull);
+      expect(fases, isNot(contains(FaseCaja.cargando)));
+      expect(servidor.veces('GET', '/api/caja/sesion'), 2);
+    });
+
+    test('sin red: conserva lo que se veía (no la marca como error ni como cerrada)', () async {
+      await conCaja('10_K1_caja_abierta');
+      servidor.programar(
+        'GET',
+        '/api/caja/sesion',
+        const RespuestaFalsa.falloDeRed(DioExceptionType.connectionError),
+      );
+      await caja().actualizar();
+      expect(estado().fase, FaseCaja.abierta);
+      expect(estado().sesion!.idSesion, 1);
+      expect(contenedor.read(puedeVenderProvider), isTrue);
+    });
+
+    test('dos actualizaciones a la vez hacen UNA sola consulta', () async {
+      await conCaja('10_K1_caja_abierta');
+      await Future.wait([caja().actualizar(), caja().actualizar()]);
+      expect(
+        servidor.veces('GET', '/api/caja/sesion'),
+        2,
+      ); // la carga inicial + una
+    });
+
+    test(
+      'mientras se está abriendo la caja no se toca el estado ni se consulta',
+      () async {
+        await conCaja('07_K1_caja_sin_abrir');
+        final apertura = Completer<void>();
+        servidor.programar(
+          'POST',
+          '/api/caja/abrir',
+          RespuestaFalsa.demorada(200, const {
+            'success': true,
+            'id_sesion': 12,
+          }, apertura.future),
+        );
+        servidor.programar(
+          'GET',
+          '/api/caja/sesion',
+          RespuestaFalsa.deEjemplo('10_K1_caja_abierta'),
+        );
+        final abriendo = caja().abrir(50000);
+        await esperarQue(estado, (e) => e.trabajando);
+
+        await caja().actualizar();
+        expect(estado().trabajando, isTrue);
+        expect(servidor.veces('GET', '/api/caja/sesion'), 1);
+
+        apertura.complete();
+        await abriendo;
+        expect(estado().fase, FaseCaja.abierta);
+      },
+    );
+
+    test('una consulta que ya estaba en vuelo cuando empezó a abrirse la caja NO pisa esa operación', () async {
+      await conCaja('07_K1_caja_sin_abrir');
+      final consulta = Completer<void>();
+      servidor.programar(
+        'GET',
+        '/api/caja/sesion',
+        RespuestaFalsa.demorada(200, cajaAbiertaDeOtraCuenta, consulta.future),
+      );
+      final actualizando = caja().actualizar();
+      await esperarQue(
+        () => servidor.veces('GET', '/api/caja/sesion'),
+        (n) => n == 2,
+      );
+
+      final apertura = Completer<void>();
+      servidor.programar(
+        'POST',
+        '/api/caja/abrir',
+        RespuestaFalsa.demorada(200, const {
+          'success': true,
+          'id_sesion': 12,
+        }, apertura.future),
+      );
+      final abriendo = caja().abrir(50000);
+      await esperarQue(estado, (e) => e.trabajando);
+
+      consulta.complete(); // la consulta vieja termina mientras se abre la caja
+      await actualizando;
+      expect(estado().trabajando, isTrue);
+      expect(estado().sesion, isNull);
+
+      servidor.programar(
+        'GET',
+        '/api/caja/sesion',
+        RespuestaFalsa.deEjemplo('10_K1_caja_abierta'),
+      );
+      apertura.complete();
+      await abriendo;
+      expect(estado().fase, FaseCaja.abierta);
+    });
+
+    test('una respuesta TARDÍA de la sesión anterior se descarta', () async {
+      await conCaja('10_K1_caja_abierta');
+      final llega = Completer<void>();
+      servidor.programar(
+        'GET',
+        '/api/caja/sesion',
+        RespuestaFalsa.demorada(200, cajaAbiertaDeOtraCuenta, llega.future),
+      );
+      final actualizando = caja().actualizar();
+      await esperarQue(
+        () => servidor.veces('GET', '/api/caja/sesion'),
+        (n) => n == 2,
+      );
+
+      servidor.programar(
+        'POST',
+        '/api/logout',
+        RespuestaFalsa.deEjemplo('28_S5_logout'),
+      );
+      await contenedor.read(sesionProvider.notifier).cerrarSesion();
+      await esperarQue(estado, (e) => e.fase == FaseCaja.cargando);
+
+      llega.complete();
+      await actualizando;
+      // No apareció la caja abierta de la cuenta anterior en la cuenta nueva.
+      expect(estado().fase, FaseCaja.cargando);
+      expect(estado().sesion, isNull);
+    });
+  });
+
   group('cambio de cuenta', () {
     test('al cerrar sesión la caja se reinicia: no queda a la vista la de la cuenta anterior', () async {
       servidor.programar(
