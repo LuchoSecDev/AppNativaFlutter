@@ -49,6 +49,77 @@ final class CajaRechazada extends ResultadoAbrirCaja {
 /// Cómo quedó lo contado frente a lo que debería haber.
 enum TipoDiferencia { cuadra, sobra, falta }
 
+/// Lo vendido (o abonado) con un método de pago en el turno: es una línea del desglose de auditoría del arqueo.
+class MovimientoPorMetodo {
+  const MovimientoPorMetodo({
+    required this.metodo,
+    required this.cantidad,
+    required this.totalCentavos,
+  });
+
+  /// `Efectivo`, `Tarjeta`, `Transferencia`, `Fiado` u `Otro` (cualquier método fuera de los conocidos).
+  final String metodo;
+
+  /// Cuántas ventas (o abonos).
+  final int cantidad;
+
+  final int totalCentavos;
+
+  /// Solo el efectivo es dinero que queda en el cajón: tarjeta, transferencia y fiado no.
+  bool get entraAlCajon => metodo == 'Efectivo';
+
+  bool get tieneMovimiento => cantidad > 0 || totalCentavos != 0;
+
+  String get etiqueta => switch (metodo) {
+    'Fiado' => 'Fiado (crédito)',
+    'Otro' => 'Otro método',
+    _ => metodo,
+  };
+
+  static const _orden = [
+    'Efectivo',
+    'Tarjeta',
+    'Transferencia',
+    'Fiado',
+    'Otro',
+  ];
+
+  /// El desglose `{ "Efectivo": {"cantidad": 2, "total": 13500}, ... }` como lista ORDENADA. Lo que no tenga la forma
+  /// esperada se omite: el desglose es de auditoría, y un dato raro no debe impedir ver el arqueo.
+  static List<MovimientoPorMetodo> desdeJson(Object? json) {
+    if (json is! Map) {
+      return const [];
+    }
+    final lista = <MovimientoPorMetodo>[];
+    for (final entrada in json.entries) {
+      final datos = entrada.value;
+      final clave = entrada.key;
+      if (clave is! String || datos is! Map) {
+        continue;
+      }
+      final cantidad = datos['cantidad'];
+      final total = ArqueoCaja._centavos(datos['total']);
+      if (cantidad is! num || total == null) {
+        continue;
+      }
+      lista.add(
+        MovimientoPorMetodo(
+          metodo: clave,
+          cantidad: cantidad.toInt(),
+          totalCentavos: total,
+        ),
+      );
+    }
+    int posicion(String m) {
+      final i = _orden.indexOf(m);
+      return i < 0 ? _orden.length : i;
+    }
+
+    lista.sort((a, b) => posicion(a.metodo).compareTo(posicion(b.metodo)));
+    return lista;
+  }
+}
+
 /// El arqueo del cierre de caja ([K5] la vista previa y [K3] el cierre real): de dónde sale lo que DEBERÍA haber en
 /// el cajón y cuánto difiere de lo que el Tendero contó.
 ///
@@ -63,6 +134,8 @@ class ArqueoCaja {
     required this.esperadoCentavos,
     required this.declaradoCentavos,
     required this.diferenciaCentavos,
+    this.ventasPorMetodo = const [],
+    this.abonosPorMetodo = const [],
   });
 
   final int aperturaCentavos;
@@ -82,6 +155,13 @@ class ArqueoCaja {
 
   /// Declarado − esperado: positivo sobra, negativo falta.
   final int diferenciaCentavos;
+
+  /// Lo vendido en el turno, separado por método de pago (auditoría). **Vacía** si el servidor no lo envió (un servidor
+  /// anterior al desglose): entonces la pantalla no muestra el bloque.
+  final List<MovimientoPorMetodo> ventasPorMetodo;
+
+  /// Lo abonado por clientes en el turno, por método de pago.
+  final List<MovimientoPorMetodo> abonosPorMetodo;
 
   static int? _centavos(Object? valor) =>
       valor is num && valor.isFinite ? (valor * 100).round() : null;
@@ -115,6 +195,8 @@ class ArqueoCaja {
       esperadoCentavos: esperado,
       declaradoCentavos: declarado,
       diferenciaCentavos: diferencia,
+      ventasPorMetodo: MovimientoPorMetodo.desdeJson(json['ventas_por_metodo']),
+      abonosPorMetodo: MovimientoPorMetodo.desdeJson(json['abonos_por_metodo']),
     );
   }
 

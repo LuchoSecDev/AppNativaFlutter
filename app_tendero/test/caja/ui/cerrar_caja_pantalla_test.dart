@@ -208,7 +208,8 @@ void main() {
         expect(find.text('Fondo inicial'), findsOneWidget);
         expect(find.text(r'$50.000'), findsOneWidget);
         expect(find.text('+ Ventas en efectivo'), findsOneWidget);
-        expect(find.text(r'$9.000'), findsOneWidget);
+        // $9.000 sale dos veces: en la cuenta del cajón y en la línea «Efectivo» del desglose por método.
+        expect(find.text(r'$9.000'), findsNWidgets(2));
         expect(find.text('+ Abonos en efectivo'), findsOneWidget);
         expect(find.text('− Egresos (gastos)'), findsOneWidget);
         expect(find.text(r'$10.000'), findsOneWidget);
@@ -219,7 +220,7 @@ void main() {
         expect(find.text('Sobra'), findsOneWidget);
         expect(find.text(r'Hay $8.500 de más en el cajón.'), findsOneWidget);
         expect(
-          find.textContaining('tarjeta, transferencia y fiado'),
+          find.textContaining('Solo el efectivo entra al cajón'),
           findsOneWidget,
         );
         expect(servidor.veces('POST', cerrar), 0);
@@ -257,6 +258,167 @@ void main() {
       expect(tester.widget<TextField>(campo()).controller!.text, '57500');
       expect(servidor.veces('POST', cerrar), 0);
     });
+  });
+
+  group('desglose por método de pago (auditoría)', () {
+    // Un turno con efectivo, tarjeta, un fiado y abonos (uno en efectivo, otro por transferencia).
+    const unTurnoVariado = RespuestaFalsa(200, {
+      'success': true,
+      'arqueo': {
+        'monto_apertura': 50000,
+        'ventas_efectivo': 13500,
+        'abonos_efectivo': 2000,
+        'egresos': 10000,
+        'monto_cierre_calculado': 55500,
+        'monto_cierre_declarado': 55500,
+        'diferencia': 0,
+        'ventas_por_metodo': {
+          'Efectivo': {'cantidad': 2, 'total': 13500},
+          'Tarjeta': {'cantidad': 1, 'total': 4500},
+          'Transferencia': {'cantidad': 0, 'total': 0},
+          'Fiado': {'cantidad': 1, 'total': 4500},
+          'Otro': {'cantidad': 0, 'total': 0},
+        },
+        'abonos_por_metodo': {
+          'Efectivo': {'cantidad': 1, 'total': 2000},
+          'Tarjeta': {'cantidad': 0, 'total': 0},
+          'Transferencia': {'cantidad': 1, 'total': 3000},
+          'Otro': {'cantidad': 0, 'total': 0},
+        },
+      },
+    });
+
+    testWidgets(
+      'el paso 2 separa lo vendido por método y marca lo que NO entra al cajón (tarjeta, transferencia, fiado)',
+      (tester) async {
+        await abrir(tester);
+        servidor.programar('POST', arqueo, unTurnoVariado);
+        await contar(tester, '55500');
+        await verArqueo(tester);
+
+        expect(
+          find.text('Lo vendido en el turno, por método de pago'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Efectivo · 2 ventas'), findsOneWidget);
+        expect(
+          find.textContaining('Tarjeta · 1 venta · no entra al cajón'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Fiado (crédito) · 1 venta · no entra al cajón'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Transferencia ·'),
+          findsOneWidget,
+          reason: 'solo el de los abonos: no hubo ventas por transferencia',
+        );
+        expect(
+          find.textContaining('Otro método'),
+          findsNothing,
+          reason: 'sin movimiento no se muestra',
+        );
+        expect(
+          find.text(r'$13.500'),
+          findsNWidgets(2),
+        ); // la cuenta del cajón y la línea de efectivo
+        expect(find.text(r'$4.500'), findsNWidgets(2)); // tarjeta y fiado
+        expect(find.text('Abonos de clientes'), findsOneWidget);
+        expect(
+          find.textContaining('Transferencia · 1 abono · no entra al cajón'),
+          findsOneWidget,
+        );
+        expect(find.text(r'$3.000'), findsOneWidget);
+      },
+    );
+
+    testWidgets('el comprobante del cierre también lo muestra', (tester) async {
+      await abrir(tester);
+      servidor.programar('POST', arqueo, unTurnoVariado);
+      await contar(tester, '55500');
+      await verArqueo(tester);
+      programarCajaCerrada();
+      servidor.programar('POST', cerrar, unTurnoVariado);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Confirmar cierre'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Lo vendido en el turno, por método de pago'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Tarjeta · 1 venta · no entra al cajón'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('un turno sin ventas lo dice (no deja el bloque vacío)', (
+      tester,
+    ) async {
+      await abrir(tester);
+      servidor.programar(
+        'POST',
+        arqueo,
+        const RespuestaFalsa(200, {
+          'success': true,
+          'arqueo': {
+            'monto_apertura': 50000,
+            'ventas_efectivo': 0,
+            'abonos_efectivo': 0,
+            'egresos': 0,
+            'monto_cierre_calculado': 50000,
+            'monto_cierre_declarado': 50000,
+            'diferencia': 0,
+            'ventas_por_metodo': {
+              'Efectivo': {'cantidad': 0, 'total': 0},
+              'Tarjeta': {'cantidad': 0, 'total': 0},
+              'Transferencia': {'cantidad': 0, 'total': 0},
+              'Fiado': {'cantidad': 0, 'total': 0},
+              'Otro': {'cantidad': 0, 'total': 0},
+            },
+            'abonos_por_metodo': {
+              'Efectivo': {'cantidad': 0, 'total': 0},
+            },
+          },
+        }),
+      );
+      await contar(tester, '50000');
+      await verArqueo(tester);
+      expect(find.text('Sin ventas en este turno.'), findsOneWidget);
+      expect(find.text('Abonos de clientes'), findsNothing);
+    });
+
+    testWidgets(
+      'con un servidor anterior al desglose (sin esos campos) el arqueo se ve igual y no aparece el bloque',
+      (tester) async {
+        await abrir(tester);
+        servidor.programar(
+          'POST',
+          arqueo,
+          const RespuestaFalsa(200, {
+            'success': true,
+            'arqueo': {
+              'monto_apertura': 50000,
+              'ventas_efectivo': 9000,
+              'abonos_efectivo': 0,
+              'egresos': 10000,
+              'monto_cierre_calculado': 49000,
+              'monto_cierre_declarado': 57500,
+              'diferencia': 8500,
+            },
+          }),
+        );
+        await contar(tester, '57500');
+        await verArqueo(tester);
+        expect(find.text('Revisar arqueo'), findsOneWidget);
+        expect(find.text('Debería haber'), findsOneWidget);
+        expect(
+          find.text('Lo vendido en el turno, por método de pago'),
+          findsNothing,
+        );
+      },
+    );
   });
 
   group('paso 3: confirmar', () {

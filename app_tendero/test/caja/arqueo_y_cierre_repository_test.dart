@@ -99,6 +99,128 @@ void main() {
       expect(falta.detalleDeLaDiferencia, isNot(contains('-')));
     });
 
+    group('desglose por método de pago', () {
+      const base = {
+        'monto_apertura': 50000,
+        'ventas_efectivo': 9000,
+        'abonos_efectivo': 0,
+        'egresos': 10000,
+        'monto_cierre_calculado': 49000,
+        'monto_cierre_declarado': 57500,
+        'diferencia': 8500,
+      };
+
+      test('lo lee del ejemplo REAL del backend: las 5 claves de ventas y las 4 de abonos, en orden', () async {
+        servidor.programar(
+          'POST',
+          '/api/caja/arqueo-previo',
+          RespuestaFalsa.deEjemplo('30_K5_arqueo_previo'),
+        );
+        final a = (await repo.verArqueo(57500) as ArqueoCalculado).arqueo;
+        expect(a.ventasPorMetodo.map((m) => m.metodo), [
+          'Efectivo',
+          'Tarjeta',
+          'Transferencia',
+          'Fiado',
+          'Otro',
+        ]);
+        expect(a.ventasPorMetodo.first.cantidad, 1);
+        expect(a.ventasPorMetodo.first.totalCentavos, 900000);
+        expect(a.abonosPorMetodo.map((m) => m.metodo), [
+          'Efectivo',
+          'Tarjeta',
+          'Transferencia',
+          'Otro',
+        ]);
+      });
+
+      test('las ordena siempre igual aunque lleguen desordenadas, y un método nuevo va al final con su nombre', () {
+        final a = ArqueoCaja.desdeJson({
+          ...base,
+          'ventas_por_metodo': {
+            'Otro': {'cantidad': 0, 'total': 0},
+            'Cripto': {'cantidad': 1, 'total': 10},
+            'Fiado': {'cantidad': 1, 'total': 4500},
+            'Efectivo': {'cantidad': 2, 'total': 9000},
+          },
+        })!;
+        expect(a.ventasPorMetodo.map((m) => m.metodo), [
+          'Efectivo',
+          'Fiado',
+          'Otro',
+          'Cripto',
+        ]);
+        expect(a.ventasPorMetodo.last.etiqueta, 'Cripto');
+      });
+
+      test('solo el efectivo entra al cajón; el fiado y «Otro» llevan una etiqueta que lo aclara', () {
+        final a = ArqueoCaja.desdeJson({
+          ...base,
+          'ventas_por_metodo': {
+            'Efectivo': {'cantidad': 1, 'total': 1},
+            'Tarjeta': {'cantidad': 1, 'total': 1},
+            'Transferencia': {'cantidad': 1, 'total': 1},
+            'Fiado': {'cantidad': 1, 'total': 1},
+            'Otro': {'cantidad': 1, 'total': 1},
+          },
+        })!;
+        expect(a.ventasPorMetodo.map((m) => m.entraAlCajon), [
+          true,
+          false,
+          false,
+          false,
+          false,
+        ]);
+        expect(a.ventasPorMetodo[3].etiqueta, 'Fiado (crédito)');
+        expect(a.ventasPorMetodo[4].etiqueta, 'Otro método');
+      });
+
+      test('los importes pasan a centavos enteros, y un movimiento en cero no cuenta como movimiento', () {
+        final a = ArqueoCaja.desdeJson({
+          ...base,
+          'ventas_por_metodo': {
+            'Efectivo': {'cantidad': 1, 'total': 4500.5},
+            'Tarjeta': {'cantidad': 0, 'total': 0},
+          },
+        })!;
+        expect(a.ventasPorMetodo[0].totalCentavos, 450050);
+        expect(a.ventasPorMetodo[0].tieneMovimiento, isTrue);
+        expect(a.ventasPorMetodo[1].tieneMovimiento, isFalse);
+      });
+
+      test('un importe sin cantidad sigue siendo un movimiento (no se oculta dinero)', () {
+        final a = ArqueoCaja.desdeJson({
+          ...base,
+          'ventas_por_metodo': {
+            'Tarjeta': {'cantidad': 0, 'total': 500},
+          },
+        })!;
+        expect(a.ventasPorMetodo.single.tieneMovimiento, isTrue);
+      });
+
+      test('sin los campos (un servidor anterior) las listas quedan vacías y el arqueo sigue siendo válido', () {
+        final a = ArqueoCaja.desdeJson(base)!;
+        expect(a.ventasPorMetodo, isEmpty);
+        expect(a.abonosPorMetodo, isEmpty);
+        expect(a.esperadoCentavos, 4900000);
+      });
+
+      test('una entrada rara se omite sin impedir ver el arqueo (es información de auditoría)', () {
+        final a = ArqueoCaja.desdeJson({
+          ...base,
+          'ventas_por_metodo': {
+            'Efectivo': {'cantidad': 1, 'total': 100},
+            'Tarjeta': 'basura',
+            'Fiado': {'cantidad': 'x', 'total': 5},
+            'Otro': {'cantidad': 1, 'total': 'x'},
+          },
+          'abonos_por_metodo': 'no es un mapa',
+        })!;
+        expect(a.ventasPorMetodo.map((m) => m.metodo), ['Efectivo']);
+        expect(a.abonosPorMetodo, isEmpty);
+      });
+    });
+
     test('mismasCifrasQue detecta que cambió lo esperado, lo contado o la diferencia', () {
       final a = ArqueoCaja.desdeJson(json)!;
       expect(a.mismasCifrasQue(ArqueoCaja.desdeJson(json)!), isTrue);

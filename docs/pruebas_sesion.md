@@ -29,6 +29,7 @@ Necesita el backend con `[K5]` desplegado (rama `feat/caja-arqueo-previo`). Con 
 8. **Sin conexión:** al pedir el arqueo, mensaje claro y se puede reintentar. Al confirmar con la red cortada: **no reenvía el cierre**; consulta la caja y dice si se cerró o si sigue abierta. Si tampoco hay red: «sin confirmar» con el botón **Comprobar** (nunca «Confirmar» otra vez).
 9. **Venta sin confirmar:** con un cobro sin resolver (cortar la red al cobrar), **Ver arqueo** y **Confirmar cierre** deben negarse y pedir resolverlo primero.
 10. **Salir a media revisión** y volver a entrar: empieza de cero (paso 1, campo vacío).
+11. **Desglose por método de pago:** en el paso 2 y en el comprobante aparece «Lo vendido en el turno, por método de pago». Hacer en el turno una venta en efectivo, una con tarjeta, una por transferencia y una fiada: cada una en su línea, con su número de ventas y su total, y las de tarjeta, transferencia y fiado marcadas **«no entra al cajón»**. El efectivo del desglose coincide con «+ Ventas en efectivo». Un turno sin ventas dice «Sin ventas en este turno». Contrastar con el historial de caja de la web (columna «Por método de pago»).
 
 ## Pendiente de probar en celular: cobro en efectivo (paso 4, subpaso 3)
 Con la caja abierta y productos en el carrito. **Cada prueba que toca el dinero se contrasta en la web** (ventas, stock y arqueo).

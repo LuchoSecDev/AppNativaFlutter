@@ -27,7 +27,47 @@
         "egresos": 10000,
         "monto_cierre_calculado": 49000,
         "monto_cierre_declarado": 57500,
-        "diferencia": 8500
+        "diferencia": 8500,
+        "ventas_por_metodo": {
+          "Efectivo": {
+            "cantidad": 1,
+            "total": 9000
+          },
+          "Tarjeta": {
+            "cantidad": 0,
+            "total": 0
+          },
+          "Transferencia": {
+            "cantidad": 0,
+            "total": 0
+          },
+          "Fiado": {
+            "cantidad": 0,
+            "total": 0
+          },
+          "Otro": {
+            "cantidad": 0,
+            "total": 0
+          }
+        },
+        "abonos_por_metodo": {
+          "Efectivo": {
+            "cantidad": 0,
+            "total": 0
+          },
+          "Tarjeta": {
+            "cantidad": 0,
+            "total": 0
+          },
+          "Transferencia": {
+            "cantidad": 0,
+            "total": 0
+          },
+          "Otro": {
+            "cantidad": 0,
+            "total": 0
+          }
+        }
       }
     }
   }
