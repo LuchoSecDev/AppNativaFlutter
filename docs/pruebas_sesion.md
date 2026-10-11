@@ -17,9 +17,23 @@ Pruebas hechas con la app real en un celular, contra el servidor desplegado. Cad
 
 *(Reportado por el responsable de la prueba. Anotar el modelo del celular en las próximas filas.)*
 
+## Pendiente de probar en celular: cierre de caja con arqueo previo (paso 5)
+Necesita el backend con `[K5]` desplegado (rama `feat/caja-arqueo-previo`). Con la caja abierta y algunas ventas en efectivo, un egreso y, si se puede, una venta con tarjeta. **Contrastar siempre en la web** (historial de caja).
+1. **Botón «Cerrar caja»** en la tarjeta de la caja del inicio (solo con la caja abierta).
+2. **Paso 1:** el campo solo admite números (máximo 9 dígitos). Sin escribir nada, **Ver arqueo** pide el monto. El **0** es válido.
+3. **Paso 2 (arqueo, no cierra nada):** muestra fondo inicial, ventas en efectivo, abonos, egresos, **«Debería haber»**, **«Tú contaste»** y **Cuadra / Sobra / Falta** con su color. Comprobar que la cuenta coincide con la web y que **la venta con tarjeta NO suma**. La caja sigue abierta (se ve en la web).
+4. **Recontar:** vuelve al campo con lo escrito; se puede cambiar y volver a ver el arqueo.
+5. **Confirmar cierre:** comprobante «Caja cerrada» con el arqueo final; **Volver al inicio**: la tarjeta dice «Caja cerrada» y **Vender** queda bloqueado. En la web el cierre aparece con el monto confirmado.
+6. **Algo cambia mientras se revisa:** en el paso 2, registrar otra venta en efectivo desde la web y confirmar: avisa «Mientras revisabas se registró un movimiento» y muestra el arqueo FINAL.
+7. **Caja cerrada en la web a mitad del cierre:** al ver el arqueo o al confirmar, dice que no hay caja abierta y el inicio se actualiza solo.
+8. **Sin conexión:** al pedir el arqueo, mensaje claro y se puede reintentar. Al confirmar con la red cortada: **no reenvía el cierre**; consulta la caja y dice si se cerró o si sigue abierta. Si tampoco hay red: «sin confirmar» con el botón **Comprobar** (nunca «Confirmar» otra vez).
+9. **Venta sin confirmar:** con un cobro sin resolver (cortar la red al cobrar), **Ver arqueo** y **Confirmar cierre** deben negarse y pedir resolverlo primero.
+10. **Salir a media revisión** y volver a entrar: empieza de cero (paso 1, campo vacío).
+11. **Desglose por método de pago:** en el paso 2 y en el comprobante aparece «Lo vendido en el turno, por método de pago». Hacer en el turno una venta en efectivo, una con tarjeta, una por transferencia y una fiada: cada una en su línea, con su número de ventas y su total, y las de tarjeta, transferencia y fiado marcadas **«no entra al cajón»**. El efectivo del desglose coincide con «+ Ventas en efectivo». Un turno sin ventas dice «Sin ventas en este turno». Contrastar con el historial de caja de la web (columna «Por método de pago»).
+
 ## Pendiente de probar en celular: cobro en efectivo (paso 4, subpaso 3)
 Con la caja abierta y productos en el carrito. **Cada prueba que toca el dinero se contrasta en la web** (ventas, stock y arqueo).
-1. **Cobro normal:** **Cobrar en efectivo** → «Verificando los precios…» → total correcto. Escribir un monto mayor: aparece «Cambio: $…». **Confirmar cobro** → comprobante «Venta registrada», con el número, el efectivo recibido y el cambio. En la web: la venta existe **una sola vez**, con el canal «app», y el stock bajó.
+1. **Cobro normal:** **Cobrar...** → **Efectivo** (desde la T6 el botón abre primero la hoja «¿Cómo vas a cobrar?») → «Verificando los precios…» → total correcto. Escribir un monto mayor: aparece «Cambio: $…». **Confirmar cobro** → comprobante «Venta registrada», con el número, el efectivo recibido y el cambio. En la web: la venta existe **una sola vez**, con el canal «app», y el stock bajó.
 2. **Monto exacto:** el botón escribe el total (redondeado al peso siguiente si tiene centavos); el cambio es $0.
 3. **Efectivo insuficiente:** con menos del total aparece «Faltan $…» y **Confirmar cobro** está bloqueado.
 4. **Nueva venta:** tras el comprobante, **Nueva venta** deja el carrito vacío. También probar el botón **atrás** en el comprobante: al volver a entrar a **Vender** no debe reaparecer.
@@ -32,6 +46,52 @@ Con la caja abierta y productos en el carrito. **Cada prueba que toca el dinero 
 11. **Caja cerrada desde la web** antes de confirmar: debe mostrar «Debes abrir tu caja antes de realizar ventas.» y bloquear **Vender**.
 12. **Stock insuficiente:** bajar el stock en la web por debajo de lo que hay en el carrito y cobrar: el servidor lo rechaza con el nombre del producto; el carrito se conserva.
 13. **Cierre de caja (web o servidor):** el efectivo de las ventas cobradas desde la app debe sumar en el arqueo.
+
+## Pendiente de probar en celular: tarjeta, transferencia y fiado (T6)
+**Nada de esto se ha probado en un celular:** hasta ahora solo corren las pruebas automáticas (servidor falso). Con la caja abierta y productos en el carrito. **Todo lo que toca dinero se contrasta en la web** (ventas, clientes y arqueo). Anotar el modelo del celular.
+1. **La hoja de métodos:** **Cobrar...** abre «¿Cómo vas a cobrar?» con Efectivo, Tarjeta, Transferencia y Fiado. Se ve completa en una pantalla pequeña, con la barra de gestos del sistema, y se cierra al elegir. Los botones se alcanzan con el pulgar. El botón sigue bloqueado sin caja abierta o con productos con problemas.
+2. **Tarjeta:** elegirla → «Verificando los precios…» → total → **Confirmar pago recibido** → comprobante «Venta registrada». En la web: la venta existe **una sola vez**, con método «Tarjeta» y canal «app».
+3. **Transferencia:** igual que la 2, con método «Transferencia». El texto de la pantalla nombra el método (no debe verse «MetodoPago…»).
+4. **Tarjeta y transferencia no suman al cajón:** hacer una de cada una y una en efectivo; en el arqueo del cierre aparecen en su línea del desglose, marcadas «no entra al cajón», y el efectivo esperado solo cambia por la venta en efectivo.
+5. **Fiado, lista de clientes:** **Fiado** trae los clientes de la tienda. Nombres con tilde y «ñ» (Doña…) se leen bien. Para cada uno, «Debe $…» y el cupo coinciden **en pesos** con el módulo de clientes de la web. Un cupo 0 dice «sin tope».
+6. **Buscador:** escribir parte del nombre, en mayúsculas y en minúsculas, y con el teclado del celular; la lista filtra. La **X** borra la búsqueda. Con una lista larga se puede desplazar.
+7. **Fiado dentro del cupo:** elegir el cliente → «Total de la compra», «Debe ahora», «Quedaría debiendo» y «Cupo» → **Confirmar fiado** → comprobante. En la web: la venta queda **Pendiente**, con el cliente elegido, y el saldo del cliente sube justo el total.
+8. **Justo en el cupo:** con un cliente al que le queden exactamente $X de cupo, fiar una compra de $X: debe dejar. Con $1 más: **Confirmar fiado** bloqueado y el mensaje «supera el cupo».
+9. **Saldo que cambia en la web:** abrir la pantalla de fiado, volver al carrito, **registrar un abono o una venta fiada a ese cliente desde la web**, y volver a abrir Fiado: debe mostrar el saldo nuevo (la lista se trae de nuevo cada vez). Si no se vuelve a abrir y el servidor rechaza por cupo, se ve el mensaje del servidor y el carrito sigue.
+10. **Sin conexión:** (a) modo avión al abrir Fiado: mensaje de conexión y **Reintentar**; (b) modo avión justo al **Confirmar fiado**: «sin confirmar»; al volver la red, **Reintentar** registra **una sola** venta, **con el mismo cliente** (verificar en la web que no hay dos ventas ni dos aumentos de saldo).
+11. **Cerrar la app con un fiado sin confirmar:** reabrir; el inicio avisa; **Reintentar** registra la venta con el cliente correcto, una sola vez.
+12. **Cambio de cuenta:** cerrar sesión y entrar con un Administrador o Tendero de **otra tienda**: la lista de Fiado muestra solo los clientes de esa tienda.
+13. **Precio cambiado desde la web** con tarjeta, transferencia y fiado: avisa «El total cambió…» y cobra con el precio nuevo.
+14. **Lo que la app NO verifica:** con tarjeta y transferencia el sistema registra lo que el Tendero confirma; no comprueba que el pago haya llegado (P24-06, pendiente de decisión). Decir esto en la demostración.
+
+## Pendiente de probar en celular: actualizar la caja y los productos (cambios hechos en la web)
+La app no se entera sola de lo que pasa en la web: vuelve a preguntar al servidor en estos momentos.
+1. **Cerrar la caja en la web y volver a la app** (dejarla en segundo plano y traerla de vuelta): el inicio debe pasar solo a «Caja cerrada», con el aviso «se cerró desde otro lugar», y **Vender** quedar bloqueado. Sin cerrar la app.
+2. **Abrir la caja en la web y volver a la app:** debe pasar a «Caja abierta» y habilitar **Vender**.
+3. **Tirar hacia abajo** en el inicio: actualiza la caja y los productos.
+4. **Botón de actualizar** (flecha circular) en la tarjeta de la caja, con la caja abierta y con la caja cerrada.
+5. **En el carrito:** botón de actualizar en la barra: avisa «Actualizado.» y refleja una caja cerrada (el escáner y el cobro se bloquean).
+6. **En «Consultar productos» y en «Elegir producto»:** botón de actualizar en la barra (además de tirar hacia abajo). Cambiar un precio o un stock en la web y comprobar que aparece.
+7. **Sin conexión** (modo avión) al volver a la app o al actualizar: no debe marcar la caja como cerrada ni como error; si fue con el botón, avisa «No se pudo actualizar. Revisa tu conexión.».
+8. **Cobrar con la caja ya cerrada en la web** (sin haber actualizado): el servidor lo rechaza con «Debes abrir tu caja antes de realizar ventas.» y la app actualiza la caja sola.
+9. **Sesión caducada** (más de 30 minutos en segundo plano): al volver, debe llevar al login con su aviso, sin quedarse colgada.
+
+## Pendiente de probar en celular: escáner en la venta (paso 4, subpaso 4)
+Con la caja abierta. Lo que **solo** se ve con la cámara real es lo más importante de esta lista.
+1. **Primer producto:** con el carrito **vacío** debe verse **Escanear producto** (activo con caja abierta; bloqueado y con «Abre la caja para escanear» sin caja). También aparece con el carrito con productos, junto a **Buscar manualmente**.
+2. **Producto conocido:** escanear una etiqueta: aparece «Agregado: …», la cámara **sigue escaneando** y el panel inferior muestra «Carrito: N unidades · $total».
+3. **Doble lectura (la prueba clave):** dejar el MISMO producto frente a la cámara 5 a 10 segundos. Debe sumar **una sola** unidad. Retirarlo más de 1,5 s y volver a mostrarlo: suma **otra**. Si se suman unidades de más, subir `silencioParaRepetirProducto` en `escaner_venta_screen.dart`; si cuesta escanear dos unidades iguales seguidas, bajarlo.
+4. **Dos productos distintos seguidos:** se agregan los dos, sin esperar.
+5. **Agotado o sin precio (0):** no se agrega y dice por qué.
+6. **Etiqueta propia con `codigo` (SKU)** en Code 128 o QR, sin código de barras comercial: lo encuentra igual.
+7. **Código desconocido:** aparece «Código no encontrado». **Cancelar** vuelve a escanear. **Vincular** abre la lista; al elegir un producto dice «Vinculado y agregado…». Comprobar en la web que el producto tiene ahora ese código, y que al escanearlo otra vez lo encuentra.
+8. **Vincular un producto agotado:** el vínculo se hace y avisa que no se pudo agregar.
+9. **Código que ya pertenece a otro producto:** muestra «Ese código ya pertenece a …» y no agrega nada.
+10. **Volver atrás** en la lista de vincular: no se vincula nada y se sigue escaneando.
+11. **Modo avión** al escanear: mensaje claro de conexión; al volver la red, el mismo código se puede escanear de inmediato.
+12. **Listo, volver al carrito:** el carrito muestra lo escaneado y el total correcto; cobrar funciona como antes.
+13. **Regresión:** **Probar el escáner** (la pantalla de diagnóstico del inicio y del login) debe leer un código y mostrarlo con «Escanear otro», igual que en el paso 1: ahora comparte con la venta la vista de la cámara.
+14. **Otro celular:** repetir 2, 3 y 13 en un segundo teléfono (lo harán los compañeros).
 
 ## Pendiente de probar en celular: caja (paso 3), lo que falta
 - **Caja cerrada:** al entrar con una cuenta sin caja abierta, el inicio dice «Caja cerrada», el botón **Vender** está bloqueado y aparece «Abre la caja para vender».

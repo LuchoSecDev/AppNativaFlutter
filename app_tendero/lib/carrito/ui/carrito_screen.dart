@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../caja/caja_providers.dart';
-import '../../catalogo/producto.dart';
 import '../../catalogo/ui/buscar_producto_screen.dart';
 import '../../ui/colores.dart';
 import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
-import '../../venta/ui/cobrar_efectivo_screen.dart';
+import '../../ui/refrescar.dart';
+import '../../venta/ui/escaner_venta_screen.dart';
+import '../../venta/ui/selector_pago_screen.dart';
 import '../../venta/venta_providers.dart';
 import '../carrito_models.dart';
 import '../carrito_providers.dart';
@@ -20,22 +21,11 @@ import '../carrito_providers.dart';
 class CarritoScreen extends ConsumerWidget {
   const CarritoScreen({super.key});
 
-  /// Qué decirle al usuario cuando no se pudo agregar un producto. `null` si se agregó.
-  static String? mensajeDeAgregar(
-    ResultadoAgregar r,
-    Producto p,
-  ) => switch (r) {
-    ResultadoAgregar.agregado => null,
-    ResultadoAgregar.agotado => '«${p.nombre}» está agotado.',
-    ResultadoAgregar.noDisponible => '«${p.nombre}» está inactivo.',
-    ResultadoAgregar.sinPrecio =>
-      '«${p.nombre}» no tiene precio. Pide al administrador que se lo asigne.',
-    ResultadoAgregar.limiteDeStock =>
-      'Ya agregaste todas las unidades que hay de «${p.nombre}».',
-    ResultadoAgregar.cargando => 'Un momento: se está preparando el carrito.',
-    ResultadoAgregar.ventaEnCurso =>
-      'Hay un cobro en curso: no se puede cambiar el carrito hasta resolverlo.',
-  };
+  void _abrirEscaner(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const EscanerVentaScreen()));
+  }
 
   Future<void> _agregarProducto(BuildContext context, WidgetRef ref) async {
     String? agregado;
@@ -129,6 +119,12 @@ class CarritoScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('Carrito'),
           actions: [
+            if (!cobro.bloqueaElCarrito)
+              IconButton(
+                tooltip: 'Actualizar caja y precios',
+                icon: const Icon(Icons.refresh),
+                onPressed: () => refrescarConAviso(context, ref),
+              ),
             if (!resumen.estaVacio && !cobro.bloqueaElCarrito)
               IconButton(
                 tooltip: 'Vaciar carrito',
@@ -149,7 +145,11 @@ class CarritoScreen extends ConsumerWidget {
               : cobro.fase == FaseCobro.enviando
               ? _Enviando(cobro: cobro)
               : resumen.estaVacio
-              ? _CarritoVacio(alAgregar: () => _agregarProducto(context, ref))
+              ? _CarritoVacio(
+                  puedeVender: puedeVender,
+                  alEscanear: () => _abrirEscaner(context),
+                  alBuscar: () => _agregarProducto(context, ref),
+                )
               : Column(
                   children: [
                     Expanded(
@@ -187,12 +187,16 @@ class CarritoScreen extends ConsumerWidget {
                       resumen: resumen,
                       cobro: cobro,
                       puedeVender: puedeVender,
-                      alAgregar: () => _agregarProducto(context, ref),
-                      alCobrar: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const CobrarEfectivoScreen(),
-                        ),
-                      ),
+                      alEscanear: () => _abrirEscaner(context),
+                      alBuscar: () => _agregarProducto(context, ref),
+                      alCobrar: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const SelectorPagoScreen(),
+                        );
+                      },
                       alReintentar: () =>
                           ref.read(cobroProvider.notifier).reintentar(),
                       alDescartar: () => _confirmarDescartar(context, ref),
@@ -206,9 +210,15 @@ class CarritoScreen extends ConsumerWidget {
 }
 
 class _CarritoVacio extends StatelessWidget {
-  const _CarritoVacio({required this.alAgregar});
+  const _CarritoVacio({
+    required this.puedeVender,
+    required this.alEscanear,
+    required this.alBuscar,
+  });
 
-  final VoidCallback alAgregar;
+  final bool puedeVender;
+  final VoidCallback alEscanear;
+  final VoidCallback alBuscar;
 
   @override
   Widget build(BuildContext context) {
@@ -229,14 +239,71 @@ class _CarritoVacio extends StatelessWidget {
               style: TextStyle(fontSize: 18, color: Colores.tinta),
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: alAgregar,
-              icon: const Icon(Icons.add),
-              label: const Text('Agregar producto'),
+            _BotonesParaAgregar(
+              puedeVender: puedeVender,
+              alEscanear: alEscanear,
+              alBuscar: alBuscar,
+              principal: true,
             ),
+            if (!puedeVender) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Abre la caja para escanear.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colores.tinta),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Las dos formas de agregar un producto: escanearlo (con la caja abierta) o buscarlo en la lista. Las mismas con el
+/// carrito vacío y con productos, para que el primer producto también se pueda escanear.
+class _BotonesParaAgregar extends StatelessWidget {
+  const _BotonesParaAgregar({
+    required this.puedeVender,
+    required this.alEscanear,
+    required this.alBuscar,
+    this.principal = false,
+  });
+
+  final bool puedeVender;
+  final VoidCallback alEscanear;
+  final VoidCallback alBuscar;
+
+  /// `true` en el carrito vacío: escanear es el botón destacado.
+  final bool principal;
+
+  @override
+  Widget build(BuildContext context) {
+    const icono = Icon(Icons.qr_code_scanner);
+    const etiqueta = Text('Escanear producto');
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (principal)
+          FilledButton.icon(
+            onPressed: puedeVender ? alEscanear : null,
+            icon: icono,
+            label: etiqueta,
+          )
+        else
+          OutlinedButton.icon(
+            onPressed: puedeVender ? alEscanear : null,
+            icon: icono,
+            label: etiqueta,
+          ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: alBuscar,
+          icon: const Icon(Icons.search),
+          label: const Text('Buscar manualmente'),
+        ),
+      ],
     );
   }
 }
@@ -363,7 +430,8 @@ class _PieDelCarrito extends StatelessWidget {
     required this.resumen,
     required this.cobro,
     required this.puedeVender,
-    required this.alAgregar,
+    required this.alEscanear,
+    required this.alBuscar,
     required this.alCobrar,
     required this.alReintentar,
     required this.alDescartar,
@@ -372,7 +440,8 @@ class _PieDelCarrito extends StatelessWidget {
   final ResumenCarrito resumen;
   final EstadoCobro cobro;
   final bool puedeVender;
-  final VoidCallback alAgregar;
+  final VoidCallback alEscanear;
+  final VoidCallback alBuscar;
   final VoidCallback alCobrar;
   final VoidCallback alReintentar;
   final VoidCallback alDescartar;
@@ -434,20 +503,20 @@ class _PieDelCarrito extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: alAgregar,
-              icon: const Icon(Icons.add),
-              label: const Text('Agregar producto'),
+            _BotonesParaAgregar(
+              puedeVender: puedeVender,
+              alEscanear: alEscanear,
+              alBuscar: alBuscar,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             FilledButton(
               onPressed: resumen.sePuedeCobrar && puedeVender ? alCobrar : null,
-              child: const Text('Cobrar en efectivo'),
+              child: const Text('Cobrar...'),
             ),
             if (!puedeVender) ...[
               const SizedBox(height: 4),
               const Text(
-                'Abre la caja para cobrar.',
+                'Abre la caja para cobrar y escanear.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: Colores.tinta),
               ),

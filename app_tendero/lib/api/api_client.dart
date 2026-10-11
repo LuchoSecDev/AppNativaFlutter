@@ -22,26 +22,36 @@ Dio crearClienteApi({
   HttpClientAdapter? adapter,
 }) {
   Dio nuevoCliente() {
-    final cliente = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: esperaMaximaDelServidor,
-      sendTimeout: esperaMaximaDelServidor,
-      receiveTimeout: esperaMaximaDelServidor,
-      headers: {
-        // Sin esta cabecera, una petición sin sesión recibe una redirección HTML en vez de un 401 en JSON.
-        'Accept': 'application/json',
-        // Canal de la sesión. El contrato lo exige en el login y lo ignora en las demás peticiones, así que se
-        // manda siempre: es imposible olvidarlo.
-        'X-Canal': 'app',
-      },
-    ));
+    final cliente = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: esperaMaximaDelServidor,
+        sendTimeout: esperaMaximaDelServidor,
+        receiveTimeout: esperaMaximaDelServidor,
+        headers: {
+          // Sin esta cabecera, una petición sin sesión recibe una redirección HTML en vez de un 401 en JSON.
+          'Accept': 'application/json',
+          // Canal de la sesión. El contrato lo exige en el login y lo ignora en las demás peticiones, así que se
+          // manda siempre: es imposible olvidarlo.
+          'X-Canal': 'app',
+        },
+      ),
+    );
     if (adapter != null) cliente.httpClientAdapter = adapter;
-    cliente.interceptors.add(CookieManager(cookieJar)); // guarda y reenvía la cookie de sesión
+    cliente.interceptors.add(
+      CookieManager(cookieJar),
+    ); // guarda y reenvía la cookie de sesión
     return cliente;
   }
 
   final tokenDio = nuevoCliente(); // solo pide el token CSRF
   final dio = nuevoCliente(); // el que usa el resto de la app
-  dio.interceptors.add(SessionInterceptor(dio: dio, tokenDio: tokenDio, onSessionExpired: onSessionExpired));
+  dio.interceptors.add(
+    SessionInterceptor(
+      dio: dio,
+      tokenDio: tokenDio,
+      onSessionExpired: onSessionExpired,
+    ),
+  );
   return dio;
 }

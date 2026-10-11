@@ -13,6 +13,11 @@ void main() {
 
   setUp(() {
     servidor = ServidorFalso();
+    servidor.programar(
+      'GET',
+      '/api/csrf-token',
+      RespuestaFalsa.deEjemplo('04_S1_csrf_token'),
+    );
     repo = CatalogoRepository(
       crearClienteApi(
         baseUrl: 'https://servidor.test',
@@ -120,5 +125,158 @@ void main() {
       const RespuestaFalsa(500, {'error': 'x'}),
     );
     await expectLater(repo.listar(), throwsA(isA<ErrorDeApi>()));
+  });
+
+  group('buscarPorCodigoBarras', () {
+    test('si el producto existe, devuelve el producto parseado', () async {
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/7701234000011',
+        RespuestaFalsa.deEjemplo('11_C2_producto_por_codigo_de_barras'),
+      );
+      final p = await repo.buscarPorCodigoBarras('7701234000011');
+      expect(p, isNotNull);
+      expect(p!.id, 1);
+      expect(p.nombre, 'Arroz Diana 1Kg');
+      expect(p.codigo, 'ARR-001');
+    });
+
+    test('si devuelve 404, devuelve null sin lanzar error', () async {
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/inexistente',
+        RespuestaFalsa.deEjemplo('12_C2_codigo_no_encontrado_404'),
+      );
+      final p = await repo.buscarPorCodigoBarras('inexistente');
+      expect(p, isNull);
+    });
+
+    test(
+      'el código se CODIFICA en la ruta: un QR con «/» o «?» no cambia de ruta',
+      () async {
+        servidor.programar(
+          'GET',
+          '/api/productos/barcode/A%2FB%3Fx%23y',
+          RespuestaFalsa.deEjemplo('12_C2_codigo_no_encontrado_404'),
+        );
+        expect(await repo.buscarPorCodigoBarras('A/B?x#y'), isNull);
+        expect(
+          servidor.peticiones.last.ruta,
+          '/api/productos/barcode/A%2FB%3Fx%23y',
+        );
+      },
+    );
+
+    test('una respuesta 200 sin el producto en «data» lanza ErrorDeApi (no un error de tipos)', () async {
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/777',
+        const RespuestaFalsa(200, {
+          'success': true,
+          'producto': {'id_producto': 1},
+        }),
+      );
+      await expectLater(
+        repo.buscarPorCodigoBarras('777'),
+        throwsA(isA<ErrorDeApi>()),
+      );
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/778',
+        const RespuestaFalsa(200, {
+          'success': true,
+          'data': 'no es un producto',
+        }),
+      );
+      await expectLater(
+        repo.buscarPorCodigoBarras('778'),
+        throwsA(isA<ErrorDeApi>()),
+      );
+    });
+
+    test('falla de red lanza ErrorDeApi', () async {
+      servidor.programar(
+        'GET',
+        '/api/productos/barcode/555',
+        const RespuestaFalsa.falloDeRed(DioExceptionType.connectionError),
+      );
+      await expectLater(
+        repo.buscarPorCodigoBarras('555'),
+        throwsA(isA<ErrorDeApi>()),
+      );
+    });
+  });
+
+  group('vincularCodigoBarras', () {
+    test('llamada exitosa completa sin lanzar nada', () async {
+      servidor.programar(
+        'PUT',
+        '/api/productos/10/link-barcode',
+        RespuestaFalsa.deEjemplo('14_C3_vincular_codigo_de_barras'),
+      );
+      await repo.vincularCodigoBarras(10, '7709876543210');
+      final req = servidor.peticiones.last;
+      expect(req.cuerpo, {'codigo_barras': '7709876543210'});
+    });
+
+    test(
+      'si da 409 (duplicado), lanza ErrorDeApi con el mensaje del servidor',
+      () async {
+        servidor.programar(
+          'PUT',
+          '/api/productos/10/link-barcode',
+          RespuestaFalsa.deEjemplo('15_C3_codigo_ya_vinculado_409'),
+        );
+        await expectLater(
+          repo.vincularCodigoBarras(10, '12345'),
+          throwsA(
+            isA<ErrorDeApi>().having(
+              (e) => e.mensaje,
+              'mensaje',
+              contains('ya pertenece'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('un 400 (código de más de 50 caracteres) también muestra el motivo del servidor', () async {
+      servidor.programar(
+        'PUT',
+        '/api/productos/10/link-barcode',
+        const RespuestaFalsa(400, {
+          'success': false,
+          'error': 'El código de barras no puede tener más de 50 caracteres',
+        }),
+      );
+      await expectLater(
+        repo.vincularCodigoBarras(10, 'x' * 60),
+        throwsA(
+          isA<ErrorDeApi>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            contains('50 caracteres'),
+          ),
+        ),
+      );
+    });
+
+    test('una falla de red lanza ErrorDeApi con el mensaje de conexión, no un texto técnico', () async {
+      servidor.programar(
+        'PUT',
+        '/api/productos/10/link-barcode',
+        const RespuestaFalsa.falloDeRed(DioExceptionType.connectionError),
+      );
+      await expectLater(
+        repo.vincularCodigoBarras(10, '123'),
+        throwsA(
+          isA<ErrorDeApi>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            contains('conexión'),
+          ),
+        ),
+      );
+    });
   });
 }

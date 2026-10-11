@@ -1,0 +1,24 @@
+{
+  "descripcion": "El monto declarado debe ser un número finito mayor o igual a 0 (también un texto numérico). Con «abc», nulo o negativo: 400, y la caja sigue abierta.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/caja/arqueo-previo",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "monto_cierre_declarado": "abc"
+    }
+  },
+  "respuesta": {
+    "estado": 400,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "error": "El monto de cierre declarado no es válido."
+    }
+  }
+}

@@ -7,6 +7,7 @@ import '../../ui/piezas_de_pantalla.dart';
 import '../../ui/reloj.dart';
 import '../caja_providers.dart';
 import 'abrir_caja_screen.dart';
+import 'cerrar_caja_screen.dart';
 
 /// La tarjeta de la pantalla de inicio que muestra el estado de la caja: cargando, cerrada (con el botón para
 /// abrirla), abierta (con el efectivo inicial y la hora) o con error (con «Reintentar»).
@@ -50,10 +51,12 @@ class TarjetaDeCaja extends ConsumerWidget {
               ),
             ],
             FaseCaja.cerrada => [
-              const _Titulo(
+              _Titulo(
                 icono: Icons.lock_outline,
                 texto: 'Caja cerrada',
                 color: Colores.aviso,
+                alActualizar: () =>
+                    ref.read(cajaProvider.notifier).actualizar(),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -75,10 +78,12 @@ class TarjetaDeCaja extends ConsumerWidget {
               ),
             ],
             FaseCaja.abierta => [
-              const _Titulo(
+              _Titulo(
                 icono: Icons.lock_open,
                 texto: 'Caja abierta',
                 color: Colores.exito,
+                alActualizar: () =>
+                    ref.read(cajaProvider.notifier).actualizar(),
               ),
               const SizedBox(height: 4),
               Text(
@@ -99,7 +104,7 @@ class TarjetaDeCaja extends ConsumerWidget {
               )) ...[
                 const SizedBox(height: 12),
                 const CuadroDeMensaje(
-                  'Esta caja se abrió en un día anterior. Ciérrala (por ahora, desde la web) antes de empezar el turno de hoy.',
+                  'Esta caja se abrió en un día anterior. Ciérrala antes de empezar el turno de hoy.',
                   esError: false,
                 ),
               ],
@@ -107,6 +112,16 @@ class TarjetaDeCaja extends ConsumerWidget {
                 const SizedBox(height: 12),
                 CuadroDeMensaje(caja.mensaje!, esError: false),
               ],
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const CerrarCajaScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.lock_outline),
+                label: const Text('Cerrar caja'),
+              ),
             ],
           },
         ),
@@ -120,11 +135,15 @@ class _Titulo extends StatelessWidget {
     required this.icono,
     required this.texto,
     required this.color,
+    required this.alActualizar,
   });
 
   final IconData icono;
   final String texto;
   final Color color;
+
+  /// Vuelve a consultar la caja: puede haber cambiado desde la web.
+  final VoidCallback alActualizar;
 
   @override
   Widget build(BuildContext context) {
@@ -132,13 +151,21 @@ class _Titulo extends StatelessWidget {
       children: [
         Icon(icono, color: color),
         const SizedBox(width: 8),
-        Text(
-          texto,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: color,
+        Expanded(
+          child: Text(
+            texto,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
+        ),
+        IconButton(
+          tooltip: 'Actualizar la caja',
+          icon: const Icon(Icons.refresh),
+          color: Colores.tinta,
+          onPressed: alActualizar,
         ),
       ],
     );

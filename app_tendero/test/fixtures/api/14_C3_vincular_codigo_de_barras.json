@@ -1,0 +1,25 @@
+{
+  "descripcion": "Asocia un código de barras a un producto que no lo tenía.",
+  "peticion": {
+    "metodo": "PUT",
+    "ruta": "/api/productos/2/link-barcode",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "codigo_barras": "7701234000028"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "message": "Código vinculado correctamente"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "descripcion": "Intentar vincular un código que ya pertenece a otro producto de la tienda.",
+  "peticion": {
+    "metodo": "PUT",
+    "ruta": "/api/productos/2/link-barcode",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "codigo_barras": "7701234000011"
+    }
+  },
+  "respuesta": {
+    "estado": 409,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "code": "BARCODE_DUPLICADO",
+      "error": "Ese código ya pertenece a «Arroz Diana 1Kg»."
+    }
+  }
+}

@@ -1,0 +1,164 @@
+[
+  {
+    "nombre": "T601 el cupo se compara con < en vez de <= (estar justo en el cupo ya no vale)",
+    "archivo": "lib/clientes/cliente.dart",
+    "patron": "totalVentaCentavos\\s*<=\\s*limiteCreditoCentavos",
+    "reemplazo": "totalVentaCentavos < limiteCreditoCentavos"
+  },
+  {
+    "nombre": "T602 el cupo ignora lo que el cliente ya debe",
+    "archivo": "lib/clientes/cliente.dart",
+    "patron": "saldoPendienteCentavos\\s*\\+\\s*totalVentaCentavos",
+    "reemplazo": "totalVentaCentavos"
+  },
+  {
+    "nombre": "T603 un cupo de 0 deja de ser «sin tope»",
+    "archivo": "lib/clientes/cliente.dart",
+    "patron": "bool get sinTope => limiteCreditoCentavos == 0;",
+    "reemplazo": "bool get sinTope => false;"
+  },
+  {
+    "nombre": "T604 un cupo ilegible se convierte en 0 (= sin tope: se podría fiar sin límite)",
+    "archivo": "lib/clientes/cliente.dart",
+    "patron": "if \\(valor is String\\) return centavosDeImporte\\(valor\\);",
+    "reemplazo": "if (valor is String) return centavosDeImporte(valor) ?? 0;"
+  },
+  {
+    "nombre": "T605 el saldo numérico se toma como centavos en vez de pesos (error de factor 100)",
+    "archivo": "lib/clientes/cliente.dart",
+    "patron": "valor < 0 \\? null : valor \\* 100",
+    "reemplazo": "valor < 0 ? null : valor"
+  },
+  {
+    "nombre": "T606 el repositorio omite en silencio al cliente ilegible en vez de fallar",
+    "archivo": "lib/clientes/clientes_repository.dart",
+    "patron": "if \\(cliente == null\\) throw const ErrorDeApi\\(respuestaInesperada\\);",
+    "reemplazo": "if (cliente == null) continue;"
+  },
+  {
+    "nombre": "T607 el repositorio acepta un success distinto de true",
+    "archivo": "lib/clientes/clientes_repository.dart",
+    "patron": "datos\\['success'\\] != true \\|\\| ",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T608 una respuesta de otra sesión ya no se descarta",
+    "archivo": "lib/clientes/clientes_providers.dart",
+    "patron": "    _generacion\\+\\+;",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T609 los clientes sobreviven al cierre de sesión",
+    "archivo": "lib/clientes/clientes_providers.dart",
+    "patron": "ref\\.watch\\(sesionProvider\\.select\\(\\(s\\) => s\\.fase\\)\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T610 se piden clientes aunque no haya sesión",
+    "archivo": "lib/clientes/clientes_providers.dart",
+    "patron": "if \\(ref\\.read\\(sesionProvider\\)\\.fase != FaseSesion\\.activa\\) return;",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T611 el buscador distingue mayúsculas",
+    "archivo": "lib/clientes/clientes_providers.dart",
+    "patron": "c\\.nombre\\.toLowerCase\\(\\)\\.contains\\(buscado\\)",
+    "reemplazo": "c.nombre.contains(buscado)"
+  },
+  {
+    "nombre": "T612 la venta no manda id_cliente",
+    "archivo": "lib/venta/venta_models.dart",
+    "patron": "if \\(idCliente != null\\) 'id_cliente': idCliente,",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T613 la copia guardada en el celular pierde al cliente (el reintento sería otra venta)",
+    "archivo": "lib/venta/venta_models.dart",
+    "patron": "(?<=aJson\\(\\) => \\{[^;]*)if \\(idCliente != null\\) 'id_cliente': idCliente,",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T614 una venta fiada guardada SIN cliente se acepta al leerla",
+    "archivo": "lib/venta/venta_models.dart",
+    "patron": "if \\(metodo == MetodoPago\\.fiado && cliente == null\\) \\{\\s*return null;\\s*\\}",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T615 el cobro no envía el cliente al servidor",
+    "archivo": "lib/venta/venta_providers.dart",
+    "patron": "idCliente: cliente\\?\\.id,",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T616 el cobro fiado no valida el cupo antes de enviar",
+    "archivo": "lib/venta/venta_providers.dart",
+    "patron": "if \\(!cliente\\.alcanzaCupo\\(resumen\\.totalCentavos\\)\\) \\{",
+    "reemplazo": "if (false) {"
+  },
+  {
+    "nombre": "T617 el cobro fiado deja pasar una venta sin cliente",
+    "archivo": "lib/venta/venta_providers.dart",
+    "patron": "return 'Debes seleccionar un cliente para vender fiado\\.';",
+    "reemplazo": "return null;"
+  },
+  {
+    "nombre": "T618 la hoja de métodos no se cierra al elegir uno",
+    "archivo": "lib/venta/ui/selector_pago_screen.dart",
+    "patron": "navegador\\.pop\\(\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "T619 «Transferencia» abre la pantalla de Tarjeta",
+    "archivo": "lib/venta/ui/selector_pago_screen.dart",
+    "patron": "metodoPago: MetodoPago\\.transferencia\\)",
+    "reemplazo": "metodoPago: MetodoPago.tarjeta)"
+  },
+  {
+    "nombre": "T620 la pantalla digital cobra siempre como Tarjeta",
+    "archivo": "lib/venta/ui/cobrar_digital_screen.dart",
+    "patron": "\\.cobrar\\(metodo: widget\\.metodoPago\\);",
+    "reemplazo": ".cobrar(metodo: MetodoPago.tarjeta);"
+  },
+  {
+    "nombre": "T621 el texto de la pantalla digital vuelve a mostrar el nombre interno del enum",
+    "archivo": "lib/venta/ui/cobrar_digital_screen.dart",
+    "patron": "\\$\\{metodoPago\\.valorApi\\} antes de confirmar",
+    "reemplazo": "$metodoPago.valorApi antes de confirmar"
+  },
+  {
+    "nombre": "T622 el fiado se puede confirmar aunque se pase del cupo",
+    "archivo": "lib/venta/ui/cobrar_fiado_screen.dart",
+    "patron": "alPulsar: alcanza \\? alCobrar : null,",
+    "reemplazo": "alPulsar: alCobrar,"
+  },
+  {
+    "nombre": "T623 «Quedaría debiendo» olvida lo que ya debe",
+    "archivo": "lib/venta/ui/cobrar_fiado_screen.dart",
+    "patron": "cliente\\.saldoPendienteCentavos \\+ total;",
+    "reemplazo": "total;"
+  },
+  {
+    "nombre": "T624 la pantalla de fiado no trae la lista de clientes",
+    "archivo": "lib/venta/ui/cobrar_fiado_screen.dart",
+    "patron": "if \\(alDia\\) \\{",
+    "reemplazo": "if (false) {"
+  },
+  {
+    "nombre": "T625 la pantalla de fiado cobra sin mandar el cliente elegido",
+    "archivo": "lib/venta/ui/cobrar_fiado_screen.dart",
+    "patron": "metodo: MetodoPago\\.fiado,\\s*cliente: cliente\\)",
+    "reemplazo": "metodo: MetodoPago.fiado)"
+  },
+  {
+    "nombre": "T626 el buscador de clientes no filtra",
+    "archivo": "lib/venta/ui/cobrar_fiado_screen.dart",
+    "patron": "consulta: controladorBusqueda\\.text,",
+    "reemplazo": "consulta: '',"
+  },
+  {
+    "nombre": "T627 el botón Cobrar... abre una hoja vacía en vez del selector de método",
+    "archivo": "lib/carrito/ui/carrito_screen.dart",
+    "patron": "builder: \\(_\\) => const SelectorPagoScreen\\(\\),",
+    "reemplazo": "builder: (_) => const SizedBox.shrink(),"
+  }
+]

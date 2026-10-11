@@ -38,7 +38,10 @@ class SessionInterceptor extends Interceptor {
   static const _metodosDeEscritura = {'POST', 'PUT', 'PATCH', 'DELETE'};
   static const _rutaLogin = '/api/login';
   static const _rutasQueCambianLaSesion = {'/api/login', '/api/logout'};
-  static const _rutasDondeElUnauthorizedEsNormal = {'/api/login', '/api/2fa/verify'};
+  static const _rutasDondeElUnauthorizedEsNormal = {
+    '/api/login',
+    '/api/2fa/verify',
+  };
   static const _marcaDeReintento = 'csrfReintentado';
 
   /// Marca para una petición cuyo 401 es esperable y NO significa «sesión caducada». Ejemplo: al abrir la app se
@@ -55,7 +58,9 @@ class SessionInterceptor extends Interceptor {
   Future<String> _obtenerToken() {
     final guardado = _csrfToken;
     if (guardado != null) return Future.value(guardado);
-    return _pedidoEnCurso ??= _pedirToken().whenComplete(() => _pedidoEnCurso = null);
+    return _pedidoEnCurso ??= _pedirToken().whenComplete(
+      () => _pedidoEnCurso = null,
+    );
   }
 
   Future<String> _pedirToken() async {
@@ -74,8 +79,13 @@ class SessionInterceptor extends Interceptor {
   }
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final esEscritura = _metodosDeEscritura.contains(options.method.toUpperCase());
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    final esEscritura = _metodosDeEscritura.contains(
+      options.method.toUpperCase(),
+    );
     if (!esEscritura || options.uri.path == _rutaLogin) {
       handler.next(options);
       return;
@@ -85,12 +95,23 @@ class SessionInterceptor extends Interceptor {
       handler.next(options);
     } on DioException catch (e) {
       // No se pudo conseguir el token (sin red, servidor dormido...): la petición original falla con ese error.
-      handler.reject(DioException(requestOptions: options, error: e, response: e.response, type: e.type, message: e.message));
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          error: e,
+          response: e.response,
+          type: e.type,
+          message: e.message,
+        ),
+      );
     }
   }
 
   @override
-  void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
     if (_rutasQueCambianLaSesion.contains(response.requestOptions.uri.path)) {
       _csrfToken = null; // la sesión cambió: el token anterior ya no sirve
     }
@@ -119,8 +140,11 @@ class SessionInterceptor extends Interceptor {
     }
 
     // Regla 4: sesión caducada o reemplazada.
-    final avisarSiCaduco = err.requestOptions.extra[sinAvisoDeCaducidad] != true;
-    if (estado == 401 && avisarSiCaduco && !_rutasDondeElUnauthorizedEsNormal.contains(ruta)) {
+    final avisarSiCaduco =
+        err.requestOptions.extra[sinAvisoDeCaducidad] != true;
+    if (estado == 401 &&
+        avisarSiCaduco &&
+        !_rutasDondeElUnauthorizedEsNormal.contains(ruta)) {
       _csrfToken = null;
       onSessionExpired?.call();
     }

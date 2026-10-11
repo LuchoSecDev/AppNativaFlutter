@@ -22,7 +22,7 @@ void main() {
   });
 
   group('VentaPendiente', () {
-    const venta = VentaPendiente(
+    const ventaEfectivo = VentaPendiente(
       clave: '4f9d2c1e-7a3b-4c58-9e10-5b6a8d0c1f22',
       items: [
         ItemVenta(idProducto: 1, cantidad: 2),
@@ -33,8 +33,16 @@ void main() {
       efectivoRecibido: 25000,
     );
 
+    const ventaFiada = VentaPendiente(
+      clave: '4f9d2c1e-7a3b-4c58-9e10-5b6a8d0c1f33',
+      items: [ItemVenta(idProducto: 1, cantidad: 1)],
+      metodoPago: MetodoPago.fiado,
+      totalCentavos: 100000,
+      idCliente: 15,
+    );
+
     test('el cuerpo de la petición sigue el contrato: cantidades enteras, método exacto, efectivo en pesos', () {
-      expect(venta.cuerpoDeLaPeticion(), {
+      expect(ventaEfectivo.cuerpoDeLaPeticion(), {
         'items': [
           {'id_producto': 1, 'cantidad': 2},
           {'id_producto': 2, 'cantidad': 1},
@@ -44,21 +52,35 @@ void main() {
       });
     });
 
-    test('sin efectivo recibido, el campo no se envía', () {
-      const sinEfectivo = VentaPendiente(
+    test('el cuerpo de la venta fiada incluye id_cliente', () {
+      expect(ventaFiada.cuerpoDeLaPeticion(), {
+        'items': [
+          {'id_producto': 1, 'cantidad': 1},
+        ],
+        'metodo_pago': 'Fiado',
+        'id_cliente': 15,
+      });
+    });
+
+    test('sin efectivo recibido ni id_cliente, los campos no se envían', () {
+      const sinOpcionales = VentaPendiente(
         clave: '4f9d2c1e-7a3b-4c58-9e10-5b6a8d0c1f22',
         items: [ItemVenta(idProducto: 1, cantidad: 1)],
         metodoPago: MetodoPago.tarjeta,
         totalCentavos: 450000,
       );
       expect(
-        sinEfectivo.cuerpoDeLaPeticion().containsKey('efectivo_recibido'),
+        sinOpcionales.cuerpoDeLaPeticion().containsKey('efectivo_recibido'),
+        isFalse,
+      );
+      expect(
+        sinOpcionales.cuerpoDeLaPeticion().containsKey('id_cliente'),
         isFalse,
       );
     });
 
     test('el cambio se calcula en centavos exactos', () {
-      expect(venta.cambioCentavos, 25000 * 100 - 2100000); // $4.000
+      expect(ventaEfectivo.cambioCentavos, 25000 * 100 - 2100000); // $4.000
       const conCentavos = VentaPendiente(
         clave: '4f9d2c1e-7a3b-4c58-9e10-5b6a8d0c1f22',
         items: [ItemVenta(idProducto: 1, cantidad: 1)],
@@ -69,15 +91,22 @@ void main() {
       expect(conCentavos.cambioCentavos, 49950); // $499,50
     });
 
-    test('guardada y leída queda igual (la clave y la carga no cambian)', () {
-      final leida = VentaPendiente.desdeJson(venta.aJson())!;
-      expect(leida.clave, venta.clave);
-      expect(leida.cuerpoDeLaPeticion(), venta.cuerpoDeLaPeticion());
-      expect(leida.totalCentavos, venta.totalCentavos);
-    });
+    test(
+      'guardada y leída queda igual (la clave, carga y extras no cambian)',
+      () {
+        final leidaE = VentaPendiente.desdeJson(ventaEfectivo.aJson())!;
+        expect(leidaE.clave, ventaEfectivo.clave);
+        expect(leidaE.cuerpoDeLaPeticion(), ventaEfectivo.cuerpoDeLaPeticion());
+        expect(leidaE.totalCentavos, ventaEfectivo.totalCentavos);
+
+        final leidaF = VentaPendiente.desdeJson(ventaFiada.aJson())!;
+        expect(leidaF.idCliente, ventaFiada.idCliente);
+        expect(leidaF.metodoPago, MetodoPago.fiado);
+      },
+    );
 
     test('lo guardado dañado o de otra forma se descarta (null)', () {
-      final bueno = venta.aJson();
+      final bueno = ventaEfectivo.aJson();
       expect(VentaPendiente.desdeJson(null), isNull);
       expect(VentaPendiente.desdeJson('texto'), isNull);
       expect(VentaPendiente.desdeJson({...bueno, 'clave': 'corta'}), isNull);
@@ -113,6 +142,15 @@ void main() {
         VentaPendiente.desdeJson({...bueno, 'efectivo_recibido': -1}),
         isNull,
       );
+      expect(VentaPendiente.desdeJson({...bueno, 'id_cliente': '3'}), isNull);
+      expect(VentaPendiente.desdeJson({...bueno, 'id_cliente': 0}), isNull);
+    });
+
+    test('venta guardada como fiado SIN id_cliente se descarta por inconsistencia de negocio', () {
+      final buenoFiado = ventaFiada.aJson();
+      final maloFiado = Map<String, dynamic>.from(buenoFiado)
+        ..remove('id_cliente');
+      expect(VentaPendiente.desdeJson(maloFiado), isNull);
     });
   });
 

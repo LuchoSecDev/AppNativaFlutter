@@ -143,3 +143,18 @@ enum ResultadoAgregar {
   /// Hay un cobro en curso o sin confirmar: el carrito no se puede cambiar hasta resolverlo.
   ventaEnCurso,
 }
+
+/// Qué decirle al usuario cuando no se pudo agregar un producto al carrito. `null` si se agregó. Lo usan el carrito
+/// y el escáner de venta, para que digan lo mismo.
+String? mensajeDeAgregar(ResultadoAgregar r, Producto p) => switch (r) {
+  ResultadoAgregar.agregado => null,
+  ResultadoAgregar.agotado => '«${p.nombre}» está agotado.',
+  ResultadoAgregar.noDisponible => '«${p.nombre}» está inactivo.',
+  ResultadoAgregar.sinPrecio =>
+    '«${p.nombre}» no tiene precio. Pide al administrador que se lo asigne.',
+  ResultadoAgregar.limiteDeStock =>
+    'Ya agregaste todas las unidades que hay de «${p.nombre}».',
+  ResultadoAgregar.cargando => 'Un momento: se está preparando el carrito.',
+  ResultadoAgregar.ventaEnCurso =>
+    'Hay un cobro en curso: no se puede cambiar el carrito hasta resolverlo.',
+};

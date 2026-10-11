@@ -64,6 +64,7 @@ void main() {
     ],
     AlmacenVentaEnMemoria? ventaPrevia,
     RespuestaFalsa? catalogoDelServidor,
+    RespuestaFalsa? clientesDelServidor,
   }) async {
     llamadasAlGenerador = 0;
     servidor = ServidorFalso();
@@ -77,6 +78,11 @@ void main() {
       '/api/productos',
       catalogoDelServidor ??
           RespuestaFalsa.deEjemplo('13_C1_lista_de_productos'),
+    );
+    servidor.programar(
+      'GET',
+      '/api/clientes',
+      clientesDelServidor ?? RespuestaFalsa.deEjemplo('16_V1_clientes'),
     );
     almacenCarrito = AlmacenEnMemoria();
     if (lineas.isNotEmpty) {
@@ -118,8 +124,14 @@ void main() {
 
   Finder campoEfectivo() => find.widgetWithText(TextField, 'Efectivo recibido');
 
-  Future<void> abrirCobro(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(FilledButton, 'Cobrar en efectivo'));
+  Future<void> abrirCobro(
+    WidgetTester tester, {
+    String metodo = 'Efectivo',
+  }) async {
+    await tester.tap(find.widgetWithText(FilledButton, 'Cobrar...'));
+    await tester.pumpAndSettle();
+    // La hoja «¿Cómo vas a cobrar?» ofrece los cuatro métodos; por defecto se elige el efectivo.
+    await tester.tap(find.widgetWithText(InkWell, metodo));
     await tester.pumpAndSettle();
   }
 
@@ -341,10 +353,7 @@ void main() {
               .onPressed,
           isNull,
         );
-        expect(
-          find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
-          findsNothing,
-        );
+        expect(find.widgetWithText(FilledButton, 'Cobrar...'), findsNothing);
         expect(find.byTooltip('Vaciar carrito'), findsNothing);
         expect(almacenVenta.datos, isNotEmpty);
 
@@ -391,10 +400,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Cancelar el cobro'));
         await tester.pumpAndSettle();
-        expect(
-          find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
-          findsOneWidget,
-        );
+        expect(find.widgetWithText(FilledButton, 'Cobrar...'), findsOneWidget);
         expect(almacenVenta.datos, isEmpty);
       },
     );
@@ -420,7 +426,7 @@ void main() {
         expect(
           tester
               .widget<FilledButton>(
-                find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
+                find.widgetWithText(FilledButton, 'Cobrar...'),
               )
               .onPressed,
           isNotNull,
@@ -448,6 +454,450 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Venta registrada'), findsNothing);
         expect(find.text('El carrito está vacío'), findsOneWidget);
+      },
+    );
+  });
+
+  group('el selector de método de pago', () {
+    testWidgets('ofrece los cuatro métodos y cada uno abre su pantalla', (
+      tester,
+    ) async {
+      await abrir(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Cobrar...'));
+      await tester.pumpAndSettle();
+      expect(find.text('¿Cómo vas a cobrar?'), findsOneWidget);
+      for (final metodo in ['Efectivo', 'Tarjeta', 'Transferencia', 'Fiado']) {
+        expect(find.widgetWithText(InkWell, metodo), findsOneWidget);
+      }
+
+      await tester.tap(find.widgetWithText(InkWell, 'Tarjeta'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cobrar con Tarjeta'), findsOneWidget);
+      expect(find.text('¿Cómo vas a cobrar?'), findsNothing);
+    });
+  });
+
+  group('tarjeta y transferencia', () {
+    for (final metodo in ['Tarjeta', 'Transferencia']) {
+      testWidgets(
+        '$metodo: verifica los precios, nombra el método y cobra SIN efectivo ni cliente, con la misma clave de idempotencia',
+        (tester) async {
+          await abrir(tester);
+          programarVentaOk();
+          await abrirCobro(tester, metodo: metodo);
+
+          expect(servidor.veces('GET', '/api/productos'), 1);
+          expect(find.text('Cobrar con $metodo'), findsOneWidget);
+          expect(find.text(r'$9.000'), findsOneWidget);
+          // Antes de corregirlo, el texto decía «por MetodoPago.tarjeta.valorApi».
+          expect(
+            find.textContaining('el pago por $metodo antes de confirmar'),
+            findsOneWidget,
+          );
+
+          await tester.tap(
+            find.widgetWithText(ElevatedButton, 'Confirmar pago recibido'),
+          );
+          await tester.pumpAndSettle();
+
+          final peticion = servidor.peticiones.singleWhere(
+            (p) => p.clave == 'POST $ruta',
+          );
+          expect(peticion.cuerpo, {
+            'items': [
+              {'id_producto': 1, 'cantidad': 2},
+            ],
+            'metodo_pago': metodo,
+          });
+          expect(peticion.headers['Idempotency-Key'], clave);
+          expect(find.text('Venta registrada'), findsOneWidget);
+        },
+      );
+    }
+
+    testWidgets(
+      'si no se pueden verificar los precios NO se deja confirmar el pago',
+      (tester) async {
+        await abrir(
+          tester,
+          catalogoDelServidor: const RespuestaFalsa.falloDeRed(
+            DioExceptionType.connectionError,
+          ),
+        );
+        await abrirCobro(tester, metodo: 'Tarjeta');
+        expect(
+          find.textContaining('No se pudo verificar los precios'),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(ElevatedButton, 'Confirmar pago recibido'),
+          findsNothing,
+        );
+        expect(servidor.veces('POST', ruta), 0);
+      },
+    );
+
+    testWidgets('si el servidor tiene OTRO precio, avisa que el total cambió', (
+      tester,
+    ) async {
+      await abrir(
+        tester,
+        productosDeLaApp: [
+          arroz(precio: '4000.00'),
+          aceite,
+        ],
+      );
+      await abrirCobro(tester, metodo: 'Transferencia');
+      expect(find.text(r'$9.000'), findsOneWidget);
+      expect(
+        find.textContaining(
+          r'El total cambió al actualizar los precios: antes era $8.000',
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('fiado', () {
+    // Un arroz: $4.500. El cliente del ejemplo real (Doña Rosa) tiene cupo de $5.000 y no debe nada.
+    const unArroz = [
+      LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 1),
+    ];
+
+    /// Una lista de clientes con la forma del ejemplo real `16_V1_clientes` (otros nombres, cupos y saldos).
+    RespuestaFalsa clientes(List<Map<String, Object?>> lista) =>
+        RespuestaFalsa(200, {
+          'success': true,
+          'clientes': [
+            for (final c in lista)
+              {
+                'celular': null,
+                'fecha_registro': '2026-10-04T15:30:00.000Z',
+                'total_fiado': '0',
+                'total_abonado': '0',
+                ...c,
+              },
+          ],
+        });
+
+    Map<String, Object?> cliente(
+      int id,
+      String nombre, {
+      String limite = '5000.00',
+      Object saldo = 0,
+    }) => {
+      'id_cliente': id,
+      'nombre': nombre,
+      'limite_credito': limite,
+      'saldo_pendiente': saldo,
+    };
+
+    Finder botonConfirmar() =>
+        find.widgetWithText(ElevatedButton, 'Confirmar fiado');
+
+    bool confirmarHabilitado(WidgetTester tester) =>
+        tester.widget<ElevatedButton>(botonConfirmar()).onPressed != null;
+
+    String valorDe(WidgetTester tester, String titulo) => tester
+        .widgetList<Text>(
+          find.descendant(
+            of: find.widgetWithText(Row, titulo).first,
+            matching: find.byType(Text),
+          ),
+        )
+        .last
+        .data!;
+
+    Future<void> elegir(WidgetTester tester, String nombre) async {
+      await tester.tap(find.text(nombre));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'trae los clientes del servidor (una vez) y muestra lo que debe y el cupo EN PESOS',
+      (tester) async {
+        await abrir(
+          tester,
+          lineas: unArroz,
+          clientesDelServidor: clientes([
+            cliente(1, 'Doña Rosa', saldo: 2500),
+            cliente(2, 'Don Pedro', limite: '0.00'),
+          ]),
+        );
+        await abrirCobro(tester, metodo: 'Fiado');
+
+        expect(servidor.veces('GET', '/api/clientes'), 1);
+        expect(find.text('Doña Rosa'), findsOneWidget);
+        expect(find.text(r'Debe $2.500 · cupo $5.000'), findsOneWidget);
+        expect(find.text(r'Debe $0 · sin tope'), findsOneWidget);
+      },
+    );
+
+    testWidgets('el buscador filtra por nombre sin distinguir mayúsculas', (
+      tester,
+    ) async {
+      await abrir(
+        tester,
+        lineas: unArroz,
+        clientesDelServidor: clientes([
+          cliente(1, 'Doña Rosa'),
+          cliente(2, 'Don Pedro'),
+        ]),
+      );
+      await abrirCobro(tester, metodo: 'Fiado');
+
+      await tester.enterText(find.byType(TextField), 'PEDRO');
+      await tester.pump();
+      expect(find.text('Don Pedro'), findsOneWidget);
+      expect(find.text('Doña Rosa'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'zzz');
+      await tester.pump();
+      expect(find.textContaining('No se encontraron clientes'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Borrar la búsqueda'));
+      await tester.pump();
+      expect(find.text('Doña Rosa'), findsOneWidget);
+      expect(find.text('Don Pedro'), findsOneWidget);
+    });
+
+    testWidgets(
+      'elegir y confirmar: manda Fiado con id_cliente, sin efectivo y con la clave de idempotencia',
+      (tester) async {
+        await abrir(tester, lineas: unArroz);
+        programarVentaOk();
+        await abrirCobro(tester, metodo: 'Fiado');
+        await elegir(tester, 'Doña Rosa');
+
+        expect(valorDe(tester, 'Total de la compra'), r'$4.500');
+        expect(valorDe(tester, 'Debe ahora'), r'$0');
+        expect(valorDe(tester, 'Quedaría debiendo'), r'$4.500');
+        expect(valorDe(tester, 'Cupo'), r'$5.000');
+
+        await tester.tap(botonConfirmar());
+        await tester.pumpAndSettle();
+
+        final peticion = servidor.peticiones.singleWhere(
+          (p) => p.clave == 'POST $ruta',
+        );
+        expect(peticion.cuerpo, {
+          'items': [
+            {'id_producto': 1, 'cantidad': 1},
+          ],
+          'metodo_pago': 'Fiado',
+          'id_cliente': 1,
+        });
+        expect(peticion.headers['Idempotency-Key'], clave);
+        expect(find.text('Venta registrada'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'si la venta se pasa del cupo NO se deja confirmar, lo explica y no se manda nada',
+      (tester) async {
+        // Dos arroces: $9.000 contra un cupo de $5.000.
+        await abrir(tester);
+        await abrirCobro(tester, metodo: 'Fiado');
+        await elegir(tester, 'Doña Rosa');
+
+        expect(
+          find.textContaining('supera el cupo de crédito del cliente'),
+          findsOneWidget,
+        );
+        expect(confirmarHabilitado(tester), isFalse);
+        expect(servidor.veces('POST', ruta), 0);
+      },
+    );
+
+    testWidgets(
+      'el cupo cuenta lo que ya debe, y estar JUSTO en el cupo es válido',
+      (tester) async {
+        // $4.500 de venta. Al que ya debe $500 le quedan justo $5.000 (válido); al que debe $501, no.
+        await abrir(
+          tester,
+          lineas: unArroz,
+          clientesDelServidor: clientes([
+            cliente(1, 'Justo', saldo: 500),
+            cliente(2, 'Pasado', saldo: 501),
+          ]),
+        );
+        await abrirCobro(tester, metodo: 'Fiado');
+
+        await elegir(tester, 'Justo');
+        expect(valorDe(tester, 'Quedaría debiendo'), r'$5.000');
+        expect(confirmarHabilitado(tester), isTrue);
+
+        await tester.tap(find.byTooltip('Elegir otro cliente'));
+        await tester.pumpAndSettle();
+        await elegir(tester, 'Pasado');
+        expect(confirmarHabilitado(tester), isFalse);
+      },
+    );
+
+    testWidgets('un cupo de 0 es «sin tope»: deja fiar cualquier monto', (
+      tester,
+    ) async {
+      await abrir(
+        tester,
+        clientesDelServidor: clientes([
+          cliente(7, 'Sin tope', limite: '0.00', saldo: 90000),
+        ]),
+      );
+      await abrirCobro(tester, metodo: 'Fiado');
+      await elegir(tester, 'Sin tope');
+
+      expect(valorDe(tester, 'Cupo'), 'Sin tope');
+      expect(valorDe(tester, 'Quedaría debiendo'), r'$99.000');
+      expect(confirmarHabilitado(tester), isTrue);
+    });
+
+    testWidgets('«Elegir otro cliente» vuelve a la lista y no cobra nada', (
+      tester,
+    ) async {
+      await abrir(tester, lineas: unArroz);
+      await abrirCobro(tester, metodo: 'Fiado');
+      await elegir(tester, 'Doña Rosa');
+      await tester.tap(find.byTooltip('Elegir otro cliente'));
+      await tester.pumpAndSettle();
+      expect(find.text('Doña Rosa'), findsOneWidget);
+      expect(botonConfirmar(), findsNothing);
+      expect(servidor.veces('POST', ruta), 0);
+    });
+
+    testWidgets(
+      'si no se pudo traer la lista de clientes: mensaje y «Reintentar»',
+      (tester) async {
+        await abrir(
+          tester,
+          lineas: unArroz,
+          clientesDelServidor: const RespuestaFalsa.falloDeRed(
+            DioExceptionType.connectionError,
+          ),
+        );
+        await abrirCobro(tester, metodo: 'Fiado');
+        expect(find.textContaining('No hay conexión'), findsOneWidget);
+
+        servidor.programar(
+          'GET',
+          '/api/clientes',
+          RespuestaFalsa.deEjemplo('16_V1_clientes'),
+        );
+        await tester.tap(find.widgetWithText(OutlinedButton, 'Reintentar'));
+        await tester.pumpAndSettle();
+        expect(find.text('Doña Rosa'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'una tienda sin clientes lo dice en vez de mostrar una lista vacía',
+      (tester) async {
+        await abrir(
+          tester,
+          lineas: unArroz,
+          clientesDelServidor: clientes(const []),
+        );
+        await abrirCobro(tester, metodo: 'Fiado');
+        expect(
+          find.textContaining('todavía no tiene clientes'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'si no se pueden verificar los precios, ni siquiera se piden los clientes',
+      (tester) async {
+        await abrir(
+          tester,
+          lineas: unArroz,
+          catalogoDelServidor: const RespuestaFalsa.falloDeRed(
+            DioExceptionType.connectionError,
+          ),
+        );
+        await abrirCobro(tester, metodo: 'Fiado');
+        expect(
+          find.textContaining('No se pudo verificar los precios'),
+          findsOneWidget,
+        );
+        expect(servidor.veces('GET', '/api/clientes'), 0);
+      },
+    );
+
+    testWidgets(
+      'el servidor decide: si rechaza por cupo (un saldo que la app no conocía), se muestra su mensaje y el carrito sigue',
+      (tester) async {
+        await abrir(tester, lineas: unArroz);
+        servidor.programar(
+          'POST',
+          ruta,
+          RespuestaFalsa.deEjemplo('22_V2_fiado_supera_el_cupo_400'),
+        );
+        await abrirCobro(tester, metodo: 'Fiado');
+        await elegir(tester, 'Doña Rosa');
+        await tester.tap(botonConfirmar());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining(
+            'Esta venta supera el cupo de crédito del cliente',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.widgetWithText(FilledButton, 'Cobrar...'),
+              )
+              .onPressed,
+          isNotNull,
+        );
+      },
+    );
+
+    testWidgets(
+      'cliente inexistente o de otra tienda (404, según el contrato): se muestra el mensaje del servidor',
+      (tester) async {
+        await abrir(tester, lineas: unArroz);
+        // Sin ejemplo real en el backend: el cuerpo sale del contrato [V2].
+        servidor.programar(
+          'POST',
+          ruta,
+          const RespuestaFalsa(404, {
+            'success': false,
+            'error': 'Cliente no encontrado',
+          }),
+        );
+        await abrirCobro(tester, metodo: 'Fiado');
+        await elegir(tester, 'Doña Rosa');
+        await tester.tap(botonConfirmar());
+        await tester.pumpAndSettle();
+        expect(find.text('Cliente no encontrado'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'sin red al confirmar: «sin confirmar» y «Reintentar» manda la MISMA venta (misma clave, mismo cliente)',
+      (tester) async {
+        await abrir(tester, lineas: unArroz);
+        programarSinRed();
+        await abrirCobro(tester, metodo: 'Fiado');
+        await elegir(tester, 'Doña Rosa');
+        await tester.tap(botonConfirmar());
+        await tester.pumpAndSettle();
+        expect(find.textContaining('No la cobres otra vez'), findsOneWidget);
+
+        programarVentaOk();
+        await tester.tap(find.text('Reintentar'));
+        await tester.pumpAndSettle();
+
+        final ventas = servidor.peticiones
+            .where((p) => p.clave == 'POST $ruta')
+            .toList();
+        expect(ventas, hasLength(2));
+        expect(ventas[1].headers['Idempotency-Key'], clave);
+        expect(ventas[1].cuerpo, ventas[0].cuerpo);
+        expect((ventas[1].cuerpo as Map)['id_cliente'], 1);
+        expect(find.text('Venta registrada'), findsOneWidget);
       },
     );
   });
