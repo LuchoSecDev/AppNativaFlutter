@@ -49,6 +49,7 @@ class VentaPendiente {
     required this.metodoPago,
     required this.totalCentavos,
     this.efectivoRecibido,
+    this.idCliente,
   });
 
   /// 8 a 100 caracteres: letras, números, guion o guion bajo (contrato [V2]).
@@ -65,6 +66,9 @@ class VentaPendiente {
   /// Efectivo que entregó el cliente, en pesos enteros. `null` si no aplica (otro método de pago).
   final int? efectivoRecibido;
 
+  /// El ID del cliente, obligatorio si el método de pago es fiado.
+  final int? idCliente;
+
   /// El cambio a devolver, en centavos; `null` si no hay efectivo recibido.
   int? get cambioCentavos =>
       efectivoRecibido == null ? null : efectivoRecibido! * 100 - totalCentavos;
@@ -73,7 +77,8 @@ class VentaPendiente {
   Map<String, dynamic> cuerpoDeLaPeticion() => {
     'items': [for (final i in items) i.aJson()],
     'metodo_pago': metodoPago.valorApi,
-    'efectivo_recibido': ?efectivoRecibido,
+    if (efectivoRecibido != null) 'efectivo_recibido': efectivoRecibido,
+    if (idCliente != null) 'id_cliente': idCliente,
   };
 
   Map<String, dynamic> aJson() => {
@@ -81,7 +86,8 @@ class VentaPendiente {
     'items': [for (final i in items) i.aJson()],
     'metodo_pago': metodoPago.valorApi,
     'total_centavos': totalCentavos,
-    'efectivo_recibido': ?efectivoRecibido,
+    if (efectivoRecibido != null) 'efectivo_recibido': efectivoRecibido,
+    if (idCliente != null) 'id_cliente': idCliente,
   };
 
   /// `null` si lo guardado no tiene la forma esperada (dañado o de otra versión): no se inventa una venta.
@@ -93,17 +99,26 @@ class VentaPendiente {
     final metodo = MetodoPago.desdeApi(json['metodo_pago']);
     final total = json['total_centavos'];
     final recibido = json['efectivo_recibido'];
+    final cliente = json['id_cliente'];
     final crudos = json['items'];
+
     if (clave is! String ||
         !_formatoDeClave.hasMatch(clave) ||
         metodo == null ||
         total is! int ||
         total < 0 ||
         (recibido != null && (recibido is! int || recibido < 0)) ||
+        (cliente != null && (cliente is! int || cliente <= 0)) ||
         crudos is! List ||
         crudos.isEmpty) {
       return null;
     }
+
+    // Validar regla de negocio de serialización: Fiado requiere cliente.
+    if (metodo == MetodoPago.fiado && cliente == null) {
+      return null;
+    }
+
     final items = <ItemVenta>[];
     for (final c in crudos) {
       if (c is! Map) {
@@ -122,6 +137,7 @@ class VentaPendiente {
       metodoPago: metodo,
       totalCentavos: total,
       efectivoRecibido: recibido as int?,
+      idCliente: cliente as int?,
     );
   }
 }

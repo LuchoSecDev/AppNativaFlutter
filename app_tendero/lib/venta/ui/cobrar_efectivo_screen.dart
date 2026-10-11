@@ -10,6 +10,7 @@ import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
 import '../venta_models.dart';
 import '../venta_providers.dart';
+import 'piezas_de_cobro.dart';
 
 /// Cobrar el carrito en efectivo: confirma el total, pide cuánto entregó el cliente y muestra el cambio.
 ///
@@ -89,14 +90,14 @@ class _CobrarEfectivoScreenState extends ConsumerState<CobrarEfectivoScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: switch (_preciosAlDia) {
-                null => const _Verificando(),
-                false => _NoSePudoVerificar(
+                null => const VerificandoPrecios(),
+                false => NoSePudoVerificarPrecios(
                   alReintentar: _verificarPrecios,
                   alVolver: () => Navigator.of(context).pop(),
                 ),
                 true =>
                   !resumen.sePuedeCobrar
-                      ? _CarritoCambio(
+                      ? CarritoCambio(
                           alVolver: () => Navigator.of(context).pop(),
                         )
                       : _formulario(total),
@@ -197,71 +198,6 @@ class _CobrarEfectivoScreenState extends ConsumerState<CobrarEfectivoScreen> {
           texto: 'Confirmar cobro',
           alPulsar: alcanza ? () => _cobrar(total) : null,
         ),
-      ],
-    );
-  }
-}
-
-class _Verificando extends StatelessWidget {
-  const _Verificando();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CircularProgressIndicator(),
-        SizedBox(height: 16),
-        Text(
-          'Verificando los precios…',
-          style: TextStyle(fontSize: 16, color: Colores.tinta),
-        ),
-      ],
-    );
-  }
-}
-
-class _NoSePudoVerificar extends StatelessWidget {
-  const _NoSePudoVerificar({
-    required this.alReintentar,
-    required this.alVolver,
-  });
-
-  final VoidCallback alReintentar;
-  final VoidCallback alVolver;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const CuadroDeMensaje(
-          'No se pudo verificar los precios con el servidor, así que no se puede cobrar con seguridad. Revisa tu conexión.',
-        ),
-        const SizedBox(height: 16),
-        BotonPrincipal(texto: 'Reintentar', alPulsar: alReintentar),
-        const SizedBox(height: 8),
-        TextButton(onPressed: alVolver, child: const Text('Volver al carrito')),
-      ],
-    );
-  }
-}
-
-class _CarritoCambio extends StatelessWidget {
-  const _CarritoCambio({required this.alVolver});
-
-  final VoidCallback alVolver;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const CuadroDeMensaje(
-          'Al actualizar el catálogo, algunos productos del carrito cambiaron y ya no se pueden cobrar. Revisa los marcados en rojo.',
-        ),
-        const SizedBox(height: 16),
-        BotonPrincipal(texto: 'Volver al carrito', alPulsar: alVolver),
       ],
     );
   }

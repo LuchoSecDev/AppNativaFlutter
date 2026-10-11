@@ -33,7 +33,7 @@ Necesita el backend con `[K5]` desplegado (rama `feat/caja-arqueo-previo`). Con 
 
 ## Pendiente de probar en celular: cobro en efectivo (paso 4, subpaso 3)
 Con la caja abierta y productos en el carrito. **Cada prueba que toca el dinero se contrasta en la web** (ventas, stock y arqueo).
-1. **Cobro normal:** **Cobrar en efectivo** → «Verificando los precios…» → total correcto. Escribir un monto mayor: aparece «Cambio: $…». **Confirmar cobro** → comprobante «Venta registrada», con el número, el efectivo recibido y el cambio. En la web: la venta existe **una sola vez**, con el canal «app», y el stock bajó.
+1. **Cobro normal:** **Cobrar...** → **Efectivo** (desde la T6 el botón abre primero la hoja «¿Cómo vas a cobrar?») → «Verificando los precios…» → total correcto. Escribir un monto mayor: aparece «Cambio: $…». **Confirmar cobro** → comprobante «Venta registrada», con el número, el efectivo recibido y el cambio. En la web: la venta existe **una sola vez**, con el canal «app», y el stock bajó.
 2. **Monto exacto:** el botón escribe el total (redondeado al peso siguiente si tiene centavos); el cambio es $0.
 3. **Efectivo insuficiente:** con menos del total aparece «Faltan $…» y **Confirmar cobro** está bloqueado.
 4. **Nueva venta:** tras el comprobante, **Nueva venta** deja el carrito vacío. También probar el botón **atrás** en el comprobante: al volver a entrar a **Vender** no debe reaparecer.
@@ -46,6 +46,23 @@ Con la caja abierta y productos en el carrito. **Cada prueba que toca el dinero 
 11. **Caja cerrada desde la web** antes de confirmar: debe mostrar «Debes abrir tu caja antes de realizar ventas.» y bloquear **Vender**.
 12. **Stock insuficiente:** bajar el stock en la web por debajo de lo que hay en el carrito y cobrar: el servidor lo rechaza con el nombre del producto; el carrito se conserva.
 13. **Cierre de caja (web o servidor):** el efectivo de las ventas cobradas desde la app debe sumar en el arqueo.
+
+## Pendiente de probar en celular: tarjeta, transferencia y fiado (T6)
+**Nada de esto se ha probado en un celular:** hasta ahora solo corren las pruebas automáticas (servidor falso). Con la caja abierta y productos en el carrito. **Todo lo que toca dinero se contrasta en la web** (ventas, clientes y arqueo). Anotar el modelo del celular.
+1. **La hoja de métodos:** **Cobrar...** abre «¿Cómo vas a cobrar?» con Efectivo, Tarjeta, Transferencia y Fiado. Se ve completa en una pantalla pequeña, con la barra de gestos del sistema, y se cierra al elegir. Los botones se alcanzan con el pulgar. El botón sigue bloqueado sin caja abierta o con productos con problemas.
+2. **Tarjeta:** elegirla → «Verificando los precios…» → total → **Confirmar pago recibido** → comprobante «Venta registrada». En la web: la venta existe **una sola vez**, con método «Tarjeta» y canal «app».
+3. **Transferencia:** igual que la 2, con método «Transferencia». El texto de la pantalla nombra el método (no debe verse «MetodoPago…»).
+4. **Tarjeta y transferencia no suman al cajón:** hacer una de cada una y una en efectivo; en el arqueo del cierre aparecen en su línea del desglose, marcadas «no entra al cajón», y el efectivo esperado solo cambia por la venta en efectivo.
+5. **Fiado, lista de clientes:** **Fiado** trae los clientes de la tienda. Nombres con tilde y «ñ» (Doña…) se leen bien. Para cada uno, «Debe $…» y el cupo coinciden **en pesos** con el módulo de clientes de la web. Un cupo 0 dice «sin tope».
+6. **Buscador:** escribir parte del nombre, en mayúsculas y en minúsculas, y con el teclado del celular; la lista filtra. La **X** borra la búsqueda. Con una lista larga se puede desplazar.
+7. **Fiado dentro del cupo:** elegir el cliente → «Total de la compra», «Debe ahora», «Quedaría debiendo» y «Cupo» → **Confirmar fiado** → comprobante. En la web: la venta queda **Pendiente**, con el cliente elegido, y el saldo del cliente sube justo el total.
+8. **Justo en el cupo:** con un cliente al que le queden exactamente $X de cupo, fiar una compra de $X: debe dejar. Con $1 más: **Confirmar fiado** bloqueado y el mensaje «supera el cupo».
+9. **Saldo que cambia en la web:** abrir la pantalla de fiado, volver al carrito, **registrar un abono o una venta fiada a ese cliente desde la web**, y volver a abrir Fiado: debe mostrar el saldo nuevo (la lista se trae de nuevo cada vez). Si no se vuelve a abrir y el servidor rechaza por cupo, se ve el mensaje del servidor y el carrito sigue.
+10. **Sin conexión:** (a) modo avión al abrir Fiado: mensaje de conexión y **Reintentar**; (b) modo avión justo al **Confirmar fiado**: «sin confirmar»; al volver la red, **Reintentar** registra **una sola** venta, **con el mismo cliente** (verificar en la web que no hay dos ventas ni dos aumentos de saldo).
+11. **Cerrar la app con un fiado sin confirmar:** reabrir; el inicio avisa; **Reintentar** registra la venta con el cliente correcto, una sola vez.
+12. **Cambio de cuenta:** cerrar sesión y entrar con un Administrador o Tendero de **otra tienda**: la lista de Fiado muestra solo los clientes de esa tienda.
+13. **Precio cambiado desde la web** con tarjeta, transferencia y fiado: avisa «El total cambió…» y cobra con el precio nuevo.
+14. **Lo que la app NO verifica:** con tarjeta y transferencia el sistema registra lo que el Tendero confirma; no comprueba que el pago haya llegado (P24-06, pendiente de decisión). Decir esto en la demostración.
 
 ## Pendiente de probar en celular: actualizar la caja y los productos (cambios hechos en la web)
 La app no se entera sola de lo que pasa en la web: vuelve a preguntar al servidor en estos momentos.

@@ -8,6 +8,7 @@ import '../caja/caja_providers.dart';
 import '../carrito/carrito_models.dart';
 import '../carrito/carrito_providers.dart';
 import '../catalogo/catalogo_providers.dart';
+import '../clientes/cliente.dart';
 import 'almacen_venta.dart';
 import 'clave_de_venta.dart';
 import 'venta_models.dart';
@@ -166,9 +167,11 @@ class CobroNotifier extends Notifier<EstadoCobro> {
   ///
   /// [efectivoRecibido] son pesos enteros y es obligatorio para [MetodoPago.efectivo]. La app valida que alcance para
   /// cubrir el total, pero quien decide es el servidor (que, hoy, no lo comprueba).
+  /// [cliente] es obligatorio si el método es [MetodoPago.fiado].
   Future<void> cobrar({
     required MetodoPago metodo,
     int? efectivoRecibido,
+    Cliente? cliente,
   }) async {
     final puede =
         !state.cargando &&
@@ -179,7 +182,12 @@ class CobroNotifier extends Notifier<EstadoCobro> {
       return;
     }
     final resumen = ref.read(resumenCarritoProvider);
-    final rechazo = _motivoParaNoCobrar(resumen, metodo, efectivoRecibido);
+    final rechazo = _motivoParaNoCobrar(
+      resumen,
+      metodo,
+      efectivoRecibido,
+      cliente,
+    );
     if (rechazo != null) {
       state = EstadoCobro(fase: FaseCobro.rechazada, mensaje: rechazo);
       return;
@@ -194,6 +202,7 @@ class CobroNotifier extends Notifier<EstadoCobro> {
       metodoPago: metodo,
       totalCentavos: resumen.totalCentavos,
       efectivoRecibido: efectivoRecibido,
+      idCliente: cliente?.id,
     );
     final g = _generacion;
     final clave = _clave!;
@@ -253,6 +262,7 @@ class CobroNotifier extends Notifier<EstadoCobro> {
     ResumenCarrito resumen,
     MetodoPago metodo,
     int? efectivoRecibido,
+    Cliente? cliente,
   ) {
     if (!ref.read(puedeVenderProvider)) {
       return 'No hay una caja abierta. Abre la caja para vender.';
@@ -265,6 +275,14 @@ class CobroNotifier extends Notifier<EstadoCobro> {
           efectivoRecibido <= 0 ||
           efectivoRecibido * 100 < resumen.totalCentavos) {
         return 'El efectivo recibido no alcanza para cubrir el total.';
+      }
+    }
+    if (metodo == MetodoPago.fiado) {
+      if (cliente == null) {
+        return 'Debes seleccionar un cliente para vender fiado.';
+      }
+      if (!cliente.alcanzaCupo(resumen.totalCentavos)) {
+        return 'El monto de esta venta supera el cupo de crédito del cliente.';
       }
     }
     return null;

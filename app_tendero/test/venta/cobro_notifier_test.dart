@@ -13,6 +13,7 @@ import 'package:stockpilot/caja/caja_providers.dart';
 import 'package:stockpilot/carrito/carrito_models.dart';
 import 'package:stockpilot/carrito/carrito_providers.dart';
 import 'package:stockpilot/catalogo/catalogo_providers.dart';
+import 'package:stockpilot/clientes/cliente.dart';
 import 'package:stockpilot/venta/venta_models.dart';
 import 'package:stockpilot/venta/venta_providers.dart';
 import 'package:stockpilot/venta/venta_repository.dart';
@@ -600,6 +601,152 @@ void main() {
       );
       expect(cobro().fase, FaseCobro.sinConfirmar);
       expect(almacenVenta.datos[claveDelAlmacen], isNotNull);
+    });
+  });
+
+  group('cobrar con tarjeta, transferencia y fiado', () {
+    const rosa = Cliente(
+      id: 1,
+      nombre: 'Doña Rosa',
+      celular: null,
+      limiteCreditoCentavos: 500000, // cupo $5.000
+      saldoPendienteCentavos: 0,
+    );
+    const sinTope = Cliente(
+      id: 2,
+      nombre: 'Don Pedro',
+      celular: null,
+      limiteCreditoCentavos: 0,
+      saldoPendienteCentavos: 0,
+    );
+
+    for (final metodo in [MetodoPago.tarjeta, MetodoPago.transferencia]) {
+      test(
+        '${metodo.valorApi}: se manda sin efectivo ni cliente, no hay cambio y el carrito se vacía',
+        () async {
+          await armar();
+          llenarCarrito();
+          servidor.programar(
+            'POST',
+            ruta,
+            RespuestaFalsa.deEjemplo('17_V2_venta_ok'),
+          );
+
+          await notificador().cobrar(metodo: metodo);
+
+          expect(cobro().fase, FaseCobro.registrada);
+          expect(cobro().venta!.cambioCentavos, isNull);
+          expect(envios().single.cuerpo, {
+            'items': [
+              {'id_producto': 1, 'cantidad': 2},
+            ],
+            'metodo_pago': metodo.valorApi,
+          });
+          expect(c.read(carritoProvider).lineas, isEmpty);
+          expect(almacenVenta.datos, isEmpty);
+        },
+      );
+    }
+
+    test('fiado sin cliente: no se envía', () async {
+      await armar();
+      llenarCarrito();
+      await notificador().cobrar(metodo: MetodoPago.fiado);
+      expect(cobro().fase, FaseCobro.rechazada);
+      expect(cobro().mensaje, contains('cliente'));
+      expect(envios(), isEmpty);
+      expect(almacenVenta.datos, isEmpty);
+    });
+
+    test(
+      'fiado que se pasa del cupo (9.000 pesos contra 5.000): no se envía',
+      () async {
+        await armar();
+        llenarCarrito();
+        await notificador().cobrar(metodo: MetodoPago.fiado, cliente: rosa);
+        expect(cobro().fase, FaseCobro.rechazada);
+        expect(cobro().mensaje, contains('cupo'));
+        expect(envios(), isEmpty);
+        expect(almacenVenta.datos, isEmpty);
+      },
+    );
+
+    test(
+      'fiado dentro del cupo: manda Fiado e id_cliente y no manda efectivo',
+      () async {
+        await armar();
+        c.read(carritoProvider.notifier).agregar(arroz); // $4.500
+        servidor.programar(
+          'POST',
+          ruta,
+          RespuestaFalsa.deEjemplo('17_V2_venta_ok'),
+        );
+
+        await notificador().cobrar(metodo: MetodoPago.fiado, cliente: rosa);
+
+        expect(cobro().fase, FaseCobro.registrada);
+        expect(envios().single.cuerpo, {
+          'items': [
+            {'id_producto': 1, 'cantidad': 1},
+          ],
+          'metodo_pago': 'Fiado',
+          'id_cliente': 1,
+        });
+        expect(envios().single.headers['Idempotency-Key'], clave);
+      },
+    );
+
+    test(
+      'fiado a un cliente sin tope: se envía aunque el monto sea grande',
+      () async {
+        await armar();
+        llenarCarrito();
+        servidor.programar(
+          'POST',
+          ruta,
+          RespuestaFalsa.deEjemplo('17_V2_venta_ok'),
+        );
+        await notificador().cobrar(metodo: MetodoPago.fiado, cliente: sinTope);
+        expect(cobro().fase, FaseCobro.registrada);
+        expect((envios().single.cuerpo as Map)['id_cliente'], 2);
+      },
+    );
+
+    test('el servidor rechaza el fiado por cupo (400 real): se muestra su mensaje, nada se pierde y la misma clave sirve al corregir', () async {
+      await armar();
+      c.read(carritoProvider.notifier).agregar(arroz);
+      servidor.programar(
+        'POST',
+        ruta,
+        RespuestaFalsa.deEjemplo('22_V2_fiado_supera_el_cupo_400'),
+      );
+
+      await notificador().cobrar(metodo: MetodoPago.fiado, cliente: rosa);
+
+      expect(cobro().fase, FaseCobro.rechazada);
+      expect(
+        cobro().mensaje,
+        contains('supera el cupo de crédito del cliente'),
+      );
+      expect(c.read(carritoProvider).lineas.single.cantidad, 1);
+      expect(almacenVenta.datos, isEmpty);
+    });
+
+    test('sin red: la venta pendiente guarda al cliente, para reintentar la MISMA venta', () async {
+      await armar(esperas: const []);
+      c.read(carritoProvider.notifier).agregar(arroz);
+      servidor.programar(
+        'POST',
+        ruta,
+        const RespuestaFalsa.falloDeRed(DioExceptionType.connectionError),
+      );
+
+      await notificador().cobrar(metodo: MetodoPago.fiado, cliente: rosa);
+
+      expect(cobro().fase, FaseCobro.sinConfirmar);
+      final guardada = almacenVenta.datos[claveDelAlmacen]!;
+      expect(guardada.idCliente, 1);
+      expect(guardada.metodoPago, MetodoPago.fiado);
     });
   });
 

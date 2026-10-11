@@ -8,8 +8,8 @@ import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
 import '../../ui/refrescar.dart';
-import '../../venta/ui/cobrar_efectivo_screen.dart';
 import '../../venta/ui/escaner_venta_screen.dart';
+import '../../venta/ui/selector_pago_screen.dart';
 import '../../venta/venta_providers.dart';
 import '../carrito_models.dart';
 import '../carrito_providers.dart';
@@ -189,11 +189,14 @@ class CarritoScreen extends ConsumerWidget {
                       puedeVender: puedeVender,
                       alEscanear: () => _abrirEscaner(context),
                       alBuscar: () => _agregarProducto(context, ref),
-                      alCobrar: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const CobrarEfectivoScreen(),
-                        ),
-                      ),
+                      alCobrar: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const SelectorPagoScreen(),
+                        );
+                      },
                       alReintentar: () =>
                           ref.read(cobroProvider.notifier).reintentar(),
                       alDescartar: () => _confirmarDescartar(context, ref),
@@ -508,7 +511,7 @@ class _PieDelCarrito extends StatelessWidget {
             const SizedBox(height: 16),
             FilledButton(
               onPressed: resumen.sePuedeCobrar && puedeVender ? alCobrar : null,
-              child: const Text('Cobrar en efectivo'),
+              child: const Text('Cobrar...'),
             ),
             if (!puedeVender) ...[
               const SizedBox(height: 4),

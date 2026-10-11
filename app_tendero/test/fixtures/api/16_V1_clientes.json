@@ -1,0 +1,31 @@
+{
+  "descripcion": "Clientes de la tienda, para elegir a quién se le fía.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/clientes",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "clientes": [
+        {
+          "id_cliente": 1,
+          "nombre": "Doña Rosa",
+          "celular": "3001234567",
+          "limite_credito": "5000.00",
+          "fecha_registro": "2026-10-04T15:30:00.000Z",
+          "total_fiado": "0",
+          "total_abonado": "0",
+          "saldo_pendiente": 0
+        }
+      ]
+    }
+  }
+}

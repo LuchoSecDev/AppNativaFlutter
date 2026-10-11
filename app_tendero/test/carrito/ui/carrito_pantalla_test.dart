@@ -358,65 +358,59 @@ void main() {
       },
     );
 
-    testWidgets(
-      '«Cobrar en efectivo» está bloqueado sin caja abierta, y lo explica',
-      (tester) async {
-        await abrir(
-          tester,
-          pantalla: const CarritoScreen(),
-          lineas: const [
-            LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 1),
-          ],
-        );
-        final cobrar = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
-        );
-        expect(cobrar.onPressed, isNull);
-        expect(
-          find.text('Abre la caja para cobrar y escanear.'),
-          findsOneWidget,
-        );
-      },
-    );
+    testWidgets('«Cobrar...» está bloqueado sin caja abierta, y lo explica', (
+      tester,
+    ) async {
+      await abrir(
+        tester,
+        pantalla: const CarritoScreen(),
+        lineas: const [
+          LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 1),
+        ],
+      );
+      final cobrar = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Cobrar...'),
+      );
+      expect(cobrar.onPressed, isNull);
+      expect(find.text('Abre la caja para cobrar y escanear.'), findsOneWidget);
+    });
 
-    testWidgets(
-      '«Cobrar en efectivo» está bloqueado si hay productos con problemas',
-      (tester) async {
-        await abrir(
-          tester,
-          pantalla: const CarritoScreen(),
-          conCajaAbierta: true,
-          productos: [
-            producto(1, 'Arroz Diana 1Kg', precio: '4500.00', cantidad: 1),
-          ],
-          lineas: const [
-            LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 3),
-          ],
-        );
-        final cobrar = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
-        );
-        expect(cobrar.onPressed, isNull);
-      },
-    );
+    testWidgets('«Cobrar...» está bloqueado si hay productos con problemas', (
+      tester,
+    ) async {
+      await abrir(
+        tester,
+        pantalla: const CarritoScreen(),
+        conCajaAbierta: true,
+        productos: [
+          producto(1, 'Arroz Diana 1Kg', precio: '4500.00', cantidad: 1),
+        ],
+        lineas: const [
+          LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 3),
+        ],
+      );
+      final cobrar = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Cobrar...'),
+      );
+      expect(cobrar.onPressed, isNull);
+    });
 
-    testWidgets(
-      '«Cobrar en efectivo» se habilita con caja abierta y todo en orden',
-      (tester) async {
-        await abrir(
-          tester,
-          pantalla: const CarritoScreen(),
-          conCajaAbierta: true,
-          lineas: const [
-            LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 1),
-          ],
-        );
-        final cobrar = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'Cobrar en efectivo'),
-        );
-        expect(cobrar.onPressed, isNotNull);
-      },
-    );
+    testWidgets('«Cobrar...» se habilita con caja abierta y todo en orden', (
+      tester,
+    ) async {
+      await abrir(
+        tester,
+        pantalla: const CarritoScreen(),
+        conCajaAbierta: true,
+        lineas: const [
+          LineaCarrito(idProducto: 1, nombre: 'Arroz Diana 1Kg', cantidad: 1),
+        ],
+      );
+      final cobrar = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Cobrar...'),
+      );
+      expect(cobrar.onPressed, isNotNull);
+    });
   });
 
   group('desde la pantalla de inicio', () {
