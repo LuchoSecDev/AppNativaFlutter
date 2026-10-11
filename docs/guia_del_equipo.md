@@ -42,7 +42,8 @@ lib/
   caja/       abrir, cerrar (arqueo en tres tiempos), estado de la caja
   carrito/    carrito de la venta (guardado en el celular)
   catalogo/   lista de productos y búsqueda
-  venta/      cobro, escáner de venta, clave de idempotencia
+  clientes/   clientes de la tienda para fiar (solo lectura; el dinero en centavos)
+  venta/      cobro (efectivo, tarjeta, transferencia y fiado), escáner de venta, clave de idempotencia
   ui/         piezas comunes: colores, formato de dinero, botones, «actualizar»
   vista_de_escaneo.dart   la cámara con el recuadro (compartida por las dos pantallas del escáner)
 test/         espejo de lib/, con test/fixtures/api = ejemplos REALES copiados del backend
@@ -86,12 +87,16 @@ Cada función sigue **las mismas cinco capas**; cópiate de `lib/caja/` (la más
 | **T3** | **Alertas** (lista y resolver) | `[A1]` (`GET /api/alertas` y `/stats`) y `[A2]` | **No hay ejemplos reales** (su contenido no es repetible): crea los fixtures a mano **desde el contrato** y márcalos como tales en el archivo. Usa `alerts`, no `data`. No dependas de `datos_json`. Sin tiempo real: se actualiza con el mecanismo de `ui/refrescar.dart`. | Bajo |
 | **T4** | **Ventas del turno** | `[V3]` (`GET /api/ventas?turno=actual`), ejemplo 23 | Una fila por producto vendido; paginación con `limit`, `offset` y `hasMore`. | Bajo |
 | **T5** | Solicitar un producto al Administrador y notificaciones | `[O1]`, `[O2]` | Opcional («si alcanza el tiempo»). Tampoco tienen ejemplos reales. | Bajo |
-| **T6** | Tarjeta, transferencia y **fiado** | `[V1]`, `[V2]` | **Reservada a Lucho.** Toca el cobro y el dinero; no la tomes. | Alto |
-| **T7** | Pruebas de celular de lo ya hecho y escáner en un segundo teléfono | `docs/pruebas_sesion.md`, `docs/pruebas_escaner.md` | No es código: anota resultados y modelo del celular. | — |
+| ✅ **T6** | ~~Tarjeta, transferencia y **fiado**~~ | `[V1]`, `[V2]` | **HECHA (10-oct-2026, Lucho).** No la rehagas ni la toques; si ves un error, avisa a Lucho. Ya está en `main`. El carrito ahora abre un selector de método («Cobrar...») y el cobro en efectivo comparte con los demás las piezas de `venta/ui/piezas_de_cobro.dart`. Falta probarla en un celular real (ver T7). | Alto |
+| **T7** | Pruebas de celular de lo ya hecho (**incluye ahora las de T6**) y escáner en un segundo teléfono | `docs/pruebas_sesion.md`, `docs/pruebas_escaner.md` | No es código: anota resultados y modelo del celular. | — |
 
 *La columna «responsable» no existe a propósito: quien la tiene es quien tenga el PR abierto. Si pasan tres días sin avance, avisa para liberar la tarea.*
 
-**Ya está hecho, no lo rehagas:** sesión (login, 2FA, primer cambio de contraseña), apertura y cierre de caja con arqueo y desglose por método, catálogo y búsqueda, carrito, cobro en efectivo con idempotencia, escáner dentro de la venta con vinculación de códigos, y «actualizar» al volver a la app.
+**Ya está hecho, no lo rehagas:** sesión (login, 2FA, primer cambio de contraseña), apertura y cierre de caja con arqueo y desglose por método, catálogo y búsqueda, carrito, cobro con idempotencia en **efectivo, tarjeta, transferencia y fiado** (T6, con el selector de método y la lista de clientes), escáner dentro de la venta con vinculación de códigos, y «actualizar» al volver a la app.
+
+**Qué queda por hacer (estado al 10-oct-2026):** T1 Egresos · T2 Recibir mercancía · T3 Alertas · T4 Ventas del turno · T5 Solicitar producto y notificaciones (opcional) · T7 pruebas de celular. Ninguna tiene PR abierto todavía. Hay una decisión de Lucho pendiente que afecta a T1 y T2: si el backend ganará idempotencia en `[K4]` y `[M1]` (P24-07, ver el plan 24 del backend); mientras tanto, la app consulta antes de reintentar. Pregúntale antes de dar T1 o T2 por terminadas.
+
+**Lo que tiene T6 y que ya puedes reutilizar:** `lib/clientes/` (lista de clientes de `[V1]`, con el dinero en centavos), `lib/venta/ui/piezas_de_cobro.dart` (los tres estados «verificando precios», «no se pudo verificar» y «el carrito cambió») y el ejemplo `test/fixtures/api/16_V1_clientes.json`. Las pruebas de pantalla de cobro (`test/venta/ui/cobro_pantallas_test.dart`) ya traen los casos de tarjeta, transferencia y fiado como modelo.
 
 ## 6. Comprobar que tus pruebas valen (mutaciones)
 Un `flutter test` en verde no basta: hay que demostrar que las pruebas **fallan cuando el código está mal**.
