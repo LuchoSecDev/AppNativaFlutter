@@ -10,7 +10,7 @@
 ---
 
 ## 1. Qué es esto
-App nativa (Flutter, Android primero) para que el Tendero de una tienda de barrio venda, escanee, abra y cierre caja. Habla con la API del backend de StockPilot (repositorio `luchoTeso/StockPilot`, carpeta `docs/`).
+App nativa (Flutter, Android primero) para que el Tendero de una tienda de barrio venda, escanee, abra y cierre caja. Habla con la API del backend de StockPilot (repositorio `LuchoSecDev/StockPilot`, carpeta `docs/`).
 
 Documentos que **debes leer**, en este orden (están en el repositorio del backend):
 1. `docs/guia_entorno_app.md`: contra qué servidor desarrollar y reglas que más se olvidan.
@@ -94,7 +94,7 @@ Cada función sigue **las mismas cinco capas**; cópiate de `lib/caja/` (la más
 
 **Ya está hecho, no lo rehagas:** sesión (login, 2FA, primer cambio de contraseña), apertura y cierre de caja con arqueo y desglose por método, catálogo y búsqueda, carrito, cobro con idempotencia en **efectivo, tarjeta, transferencia y fiado** (T6, con el selector de método y la lista de clientes), escáner dentro de la venta con vinculación de códigos, y «actualizar» al volver a la app.
 
-**Qué queda por hacer (estado al 10-oct-2026):** T1 Egresos · T2 Recibir mercancía · T3 Alertas · T4 Ventas del turno · T5 Solicitar producto y notificaciones (opcional) · T7 pruebas de celular. Ninguna tiene PR abierto todavía. Hay una decisión de Lucho pendiente que afecta a T1 y T2: si el backend ganará idempotencia en `[K4]` y `[M1]` (P24-07, ver el plan 24 del backend); mientras tanto, la app consulta antes de reintentar. Pregúntale antes de dar T1 o T2 por terminadas.
+**Qué queda por hacer (estado al 10-oct-2026):** T1 Egresos · T2 Recibir mercancía · T3 Alertas · T4 Ventas del turno · T5 Solicitar producto y notificaciones (opcional) · T7 pruebas de celular. Ninguna tiene PR abierto todavía. **Idempotencia (decidido el 11-oct-2026, P24-07):** el backend la va a añadir a `[K4]` (egresos) y `[M1]` (entradas de mercancía), con la misma cabecera `Idempotency-Key` y la misma semántica de la venta (200 repetido; 422 si la clave se reutiliza con otra carga). **No** se añade a `[K3]` (cierre de caja). Antes se corrige, también para la web, que dos entradas de inventario simultáneas no pierdan una actualización. **Hoy, mientras eso no esté desplegado y documentado en el contrato, `[K4]` y `[M1]` siguen SIN idempotencia:** la app consulta antes de reintentar y no manda la cabecera. Cuando el contrato lo diga, Lucho avisa y los ejemplos nuevos aparecerán en `docs/ejemplos_app_tendero/` del backend; ahí se añade la cabecera en un PR pequeño (la clave nueva por operación y la misma en sus reintentos, como la venta). No la inventes antes. Pregúntale a Lucho antes de dar T1 o T2 por terminadas.
 
 **Lo que tiene T6 y que ya puedes reutilizar:** `lib/clientes/` (lista de clientes de `[V1]`, con el dinero en centavos), `lib/venta/ui/piezas_de_cobro.dart` (los tres estados «verificando precios», «no se pudo verificar» y «el carrito cambió») y el ejemplo `test/fixtures/api/16_V1_clientes.json`. Las pruebas de pantalla de cobro (`test/venta/ui/cobro_pantallas_test.dart`) ya traen los casos de tarjeta, transferencia y fiado como modelo.
 
