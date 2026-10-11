@@ -16,8 +16,10 @@ La ruta del proyecto no puede tener tildes ni espacios.
    escribe la prueba contra ese archivo. **Nunca inventes la forma de una respuesta.** Si la API no alcanza, avisa a Lucho:
    no se contornea desde la app.
 3. **El dinero va en centavos enteros**, nunca `double` (`ui/dinero.dart`).
-4. **Ninguna escritura se reintenta a ciegas**, salvo la venta (`Idempotency-Key`). Egresos, entradas de mercancía y
-   cierre de caja no tienen idempotencia: ante un tiempo de espera, primero se consulta cómo quedó.
+4. **Ninguna escritura se reintenta a ciegas**, salvo las que llevan `Idempotency-Key`: la venta `[V2]` y, SOLO cuando
+   Lucho avise de que el backend con idempotencia está desplegado, el egreso `[K4]` y la entrada `[M1]` (11-oct-2026:
+   hecho en una rama del backend, aún sin desplegar; ver «Idempotencia» en `docs/guia_del_equipo.md`). Hasta ese aviso,
+   y siempre para el cierre de caja, ante un tiempo de espera primero se consulta cómo quedó.
 5. **Los widgets no llaman al servidor.** Cinco capas: modelos, repositorio, `Notifier` de Riverpod, pantalla, pruebas.
    Cada `Notifier` descarta respuestas de una sesión anterior (`_generacion`). Cópiate de `lib/caja/`.
 6. **Mutaciones:** tras escribir pruebas, rompe a propósito cada regla importante y comprueba que alguna falla. Si
