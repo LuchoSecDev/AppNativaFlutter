@@ -34,14 +34,20 @@ class EstadoSesion {
   /// [mensaje]: un error o aviso para mostrar. [pideForzar]: ya hay una sesión abierta en otro dispositivo de la
   /// app y hay que preguntar si se cierra (contrato, [S2] 409).
   const EstadoSesion.sinSesion({String? mensaje, bool pideForzar = false})
-      : this._(fase: FaseSesion.sinSesion, mensaje: mensaje, pideForzar: pideForzar);
+    : this._(
+        fase: FaseSesion.sinSesion,
+        mensaje: mensaje,
+        pideForzar: pideForzar,
+      );
 
-  const EstadoSesion.codigo2FA({String? mensaje}) : this._(fase: FaseSesion.codigo2FA, mensaje: mensaje);
+  const EstadoSesion.codigo2FA({String? mensaje})
+    : this._(fase: FaseSesion.codigo2FA, mensaje: mensaje);
 
   const EstadoSesion.cambioClave(UsuarioSesion usuario, {String? mensaje})
-      : this._(fase: FaseSesion.cambioClave, usuario: usuario, mensaje: mensaje);
+    : this._(fase: FaseSesion.cambioClave, usuario: usuario, mensaje: mensaje);
 
-  const EstadoSesion.activa(InfoSesion info) : this._(fase: FaseSesion.activa, info: info);
+  const EstadoSesion.activa(InfoSesion info)
+    : this._(fase: FaseSesion.activa, info: info);
 
   final FaseSesion fase;
 
@@ -61,9 +67,9 @@ class EstadoSesion {
 
   /// El mismo estado, marcado como «esperando al servidor» y sin mensajes viejos.
   EstadoSesion enTrabajo() => EstadoSesion._(
-        fase: fase,
-        usuario: usuario,
-        info: info,
-        trabajando: true,
-      );
+    fase: fase,
+    usuario: usuario,
+    info: info,
+    trabajando: true,
+  );
 }

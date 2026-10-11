@@ -14,7 +14,17 @@ void main() {
     });
 
     test('importes inválidos devuelven null, no una cifra inventada', () {
-      for (final malo in ['', 'abc', '-5.00', '1.234', '1,50', '1.2.3', '12 000', r'$100', '1e5']) {
+      for (final malo in [
+        '',
+        'abc',
+        '-5.00',
+        '1.234',
+        '1,50',
+        '1.2.3',
+        '12 000',
+        r'$100',
+        '1e5',
+      ]) {
         expect(centavosDeImporte(malo), isNull, reason: 'importe: "$malo"');
       }
     });
@@ -38,7 +48,10 @@ void main() {
   group('por qué no se usa double', () {
     test('sumar centavos enteros es exacto donde el double falla', () {
       expect(0.1 + 0.2 == 0.3, isFalse); // el problema que se evita
-      expect(centavosDeImporte('0.10')! + centavosDeImporte('0.20')!, centavosDeImporte('0.30'));
+      expect(
+        centavosDeImporte('0.10')! + centavosDeImporte('0.20')!,
+        centavosDeImporte('0.30'),
+      );
     });
 
     test('3 unidades de 3.333,33 dan exactamente 9.999,99', () {

@@ -14,5 +14,7 @@ import 'package:path_provider/path_provider.dart';
 Future<CookieJar> crearCookieJarPersistente() async {
   final carpeta = await getApplicationDocumentsDirectory();
   final sep = Platform.pathSeparator;
-  return PersistCookieJar(storage: FileStorage('${carpeta.path}$sep.cookies$sep'));
+  return PersistCookieJar(
+    storage: FileStorage('${carpeta.path}$sep.cookies$sep'),
+  );
 }
