@@ -9,6 +9,7 @@ import '../../catalogo/catalogo_providers.dart';
 import '../../catalogo/producto.dart';
 import '../../catalogo/ui/buscar_producto_screen.dart';
 import '../../scan_stabilizer.dart';
+import '../../ui/avisos.dart';
 import '../../ui/colores.dart';
 import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
@@ -87,7 +88,7 @@ class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen> {
       final rechazo = _agregar(producto);
       _avisar(
         rechazo ?? 'Agregado: ${producto.nombre}',
-        tipo: rechazo == null ? _Aviso.exito : _Aviso.error,
+        tipo: rechazo == null ? TipoAviso.exito : TipoAviso.error,
       );
       // Sin reiniciar: la cámara sigue un momento sobre este producto y no debe agregarse otra vez.
       _reanudar(reiniciar: false);
@@ -95,7 +96,7 @@ class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen> {
       if (!mounted) {
         return;
       }
-      _avisar(e.mensaje, tipo: _Aviso.error);
+      _avisar(e.mensaje, tipo: TipoAviso.error);
       _reanudar(
         reiniciar: true,
       ); // tras un error se puede reintentar el mismo código al instante
@@ -156,7 +157,7 @@ class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen> {
       if (!mounted) {
         return;
       }
-      _avisar(e.mensaje, tipo: _Aviso.error);
+      _avisar(e.mensaje, tipo: TipoAviso.error);
       _reanudar(reiniciar: true);
       return;
     }
@@ -185,7 +186,7 @@ class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen> {
       rechazo == null
           ? 'Vinculado y agregado: ${producto.nombre}.$sinLista'
           : 'Vinculado, pero $rechazo$sinLista',
-      tipo: rechazo == null ? _Aviso.exito : _Aviso.aviso,
+      tipo: rechazo == null ? TipoAviso.exito : TipoAviso.aviso,
     );
     _reanudar(reiniciar: false);
   }
@@ -212,21 +213,8 @@ class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen> {
     setState(() => _pausado = false);
   }
 
-  void _avisar(String texto, {required _Aviso tipo}) {
-    final mensajes = ScaffoldMessenger.of(context);
-    mensajes.clearSnackBars();
-    mensajes.showSnackBar(
-      SnackBar(
-        content: Text(texto),
-        duration: const Duration(seconds: 3),
-        backgroundColor: switch (tipo) {
-          _Aviso.exito => Colores.exito,
-          _Aviso.aviso => Colores.aviso,
-          _Aviso.error => Colores.peligro,
-        },
-      ),
-    );
-  }
+  void _avisar(String texto, {required TipoAviso tipo}) =>
+      mostrarAviso(context, texto, tipo: tipo);
 
   // ───────────────────────── pantalla ─────────────────────────
 
@@ -297,5 +285,3 @@ class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen> {
     );
   }
 }
-
-enum _Aviso { exito, aviso, error }

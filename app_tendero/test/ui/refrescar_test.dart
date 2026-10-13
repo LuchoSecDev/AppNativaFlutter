@@ -224,6 +224,14 @@ void main() {
         expect(consultasDeCaja(), 2);
         expect(consultasDeProductos(), productosAntes + 1);
         expect(find.text('Actualizado.'), findsOneWidget);
+        // Es una buena noticia: ícono de éxito, no de error.
+        expect(
+          find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.byIcon(Icons.check_circle_rounded),
+          ),
+          findsOneWidget,
+        );
         // La caja cerrada se refleja de inmediato: el escáner queda bloqueado.
         expect(find.text('Abre la caja para escanear.'), findsOneWidget);
       },
@@ -238,6 +246,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text('No se pudo actualizar. Revisa tu conexión.'),
+        findsOneWidget,
+      );
+      // Es una falla: ícono de error, no de éxito.
+      expect(
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.byIcon(Icons.error_rounded),
+        ),
         findsOneWidget,
       );
     });

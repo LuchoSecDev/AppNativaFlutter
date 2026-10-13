@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../caja/caja_providers.dart';
 import '../../catalogo/ui/buscar_producto_screen.dart';
+import '../../ui/avisos.dart';
 import '../../ui/colores.dart';
 import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
@@ -44,8 +45,7 @@ class CarritoScreen extends ConsumerWidget {
       ),
     );
     if (agregado != null && context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Agregado: $agregado')));
+      mostrarAviso(context, 'Agregado: $agregado', tipo: TipoAviso.exito);
     }
   }
 
@@ -167,10 +167,10 @@ class CarritoScreen extends ConsumerWidget {
                                 .incrementar(id);
                             if (r == ResultadoAgregar.limiteDeStock &&
                                 producto != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(mensajeDeAgregar(r, producto)!),
-                                ),
+                              mostrarAviso(
+                                context,
+                                mensajeDeAgregar(r, producto)!,
+                                tipo: TipoAviso.aviso,
                               );
                             }
                           },

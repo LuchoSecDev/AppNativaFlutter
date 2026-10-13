@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../ui/avisos.dart';
 import '../../ui/colores.dart';
 import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
@@ -9,6 +10,7 @@ import '../../ui/refrescar.dart';
 import '../buscar_productos.dart';
 import '../catalogo_providers.dart';
 import '../producto.dart';
+import 'ficha_de_producto.dart';
 
 /// Pantalla para buscar un producto escribiendo su nombre, categoría o código.
 ///
@@ -37,52 +39,16 @@ class _BuscarProductoScreenState extends ConsumerState<BuscarProductoScreen> {
 
   void _tocar(Producto producto) {
     if (widget.alElegir == null) {
-      _mostrarDatos(producto);
+      mostrarFichaDeProducto(context, producto);
       return;
     }
     // Quien elige decide si acepta el producto: si no, devuelve el motivo y se queda en la pantalla.
     final rechazo = widget.alElegir!(producto);
     if (rechazo != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(rechazo)));
+      mostrarAviso(context, rechazo, tipo: TipoAviso.aviso);
       return;
     }
     Navigator.of(context).pop(producto);
-  }
-
-  void _mostrarDatos(Producto p) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              p.nombre,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Colores.tinta,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text('Precio: ${formatoPesos(p.precio)}'),
-            Text(
-              'Stock: ${p.cantidad} ${p.cantidad == 1 ? 'unidad' : 'unidades'}',
-            ),
-            if (p.categoria.isNotEmpty) Text('Categoría: ${p.categoria}'),
-            if (p.codigo.isNotEmpty) Text('Código: ${p.codigo}'),
-            Text(
-              p.codigoBarras == null
-                  ? 'Código de barras: sin asociar'
-                  : 'Código de barras: ${p.codigoBarras}',
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
