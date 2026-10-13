@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- La red es indispensable: sin esto un APK de release no se conecta al servidor (solo los manifiestos de debug y profile la traían). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="StockPilot"
