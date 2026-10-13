@@ -214,9 +214,12 @@ void main() {
         await abrirBuscador(tester, conLista);
         await tester.tap(find.text('Aceite Gourmet 1L'));
         await tester.pumpAndSettle();
-        expect(find.text(r'Precio: $12.000'), findsOneWidget);
-        expect(find.text('Stock: 5 unidades'), findsOneWidget);
-        expect(find.text('Código de barras: sin asociar'), findsOneWidget);
+        expect(find.text(r'$12.000'), findsWidgets);
+        expect(find.text('5 unidades'), findsOneWidget);
+        expect(find.text('Sin asociar'), findsOneWidget);
+        // Es una ficha centrada y flotante, no una hoja pegada al pie.
+        expect(find.byType(Dialog), findsOneWidget);
+        expect(find.byType(BottomSheet), findsNothing);
       },
     );
 

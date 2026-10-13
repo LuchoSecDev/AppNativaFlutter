@@ -1,0 +1,68 @@
+[
+  {
+    "nombre": "FP01 un producto agotado por unidades se muestra como disponible",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "if \\(p\\.agotado\\) return \\(texto: 'Agotado', color: Colores\\.peligro\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "FP02 un producto inactivo con stock se muestra como disponible",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "if \\(!p\\.estaDisponible\\) \\{",
+    "reemplazo": "if (false) {"
+  },
+  {
+    "nombre": "FP03 el stock crítico pierde su alarma roja (se pinta como aviso)",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "'critico' => \\(texto: 'Stock crítico', color: Colores\\.peligro\\)",
+    "reemplazo": "'critico' => (texto: 'Stock crítico', color: Colores.aviso)"
+  },
+  {
+    "nombre": "FP04 un nivel desconocido se lee como alarma en vez de disponible",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "_ => \\(texto: 'Disponible', color: Colores\\.exito\\)",
+    "reemplazo": "_ => (texto: 'Agotado', color: Colores.peligro)"
+  },
+  {
+    "nombre": "FP05 una unidad se escribe en plural",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "p\\.cantidad == 1 \\? 'unidad' : 'unidades'",
+    "reemplazo": "false ? 'unidad' : 'unidades'"
+  },
+  {
+    "nombre": "FP06 un código de barras sin asociar se muestra como null",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "valor: p\\.codigoBarras \\?\\? 'Sin asociar',",
+    "reemplazo": "valor: '${p.codigoBarras}',"
+  },
+  {
+    "nombre": "FP07 la categoría vacía deja una fila vacía",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "if \\(p\\.categoria\\.isNotEmpty\\)",
+    "reemplazo": "if (true)"
+  },
+  {
+    "nombre": "FP08 la X no cierra la ficha",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "onPressed: \\(\\) => Navigator\\.of\\(context\\)\\.pop\\(\\),",
+    "reemplazo": "onPressed: () {},"
+  },
+  {
+    "nombre": "FP09 tocar fuera ya no cierra la ficha",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "context: context,\\s*builder: \\(_\\) => FichaDeProducto",
+    "reemplazo": "context: context, barrierDismissible: false,\n      builder: (_) => FichaDeProducto"
+  },
+  {
+    "nombre": "FP10 el precio se muestra sin formato de pesos",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "formatoPesos\\(p\\.precio\\),",
+    "reemplazo": "p.precio,"
+  },
+  {
+    "nombre": "FP11 la consulta vuelve a abrir una hoja pegada al pie en vez de la ficha",
+    "archivo": "lib/catalogo/ui/buscar_producto_screen.dart",
+    "patron": "mostrarFichaDeProducto\\(context, producto\\);",
+    "reemplazo": "showModalBottomSheet<void>(context: context, builder: (_) => FichaDeProducto(producto: producto));"
+  }
+]
