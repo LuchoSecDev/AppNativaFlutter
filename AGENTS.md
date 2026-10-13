@@ -18,7 +18,7 @@ La ruta del proyecto no puede tener tildes ni espacios.
 3. **El dinero va en centavos enteros**, nunca `double` (`ui/dinero.dart`).
 4. **Ninguna escritura se reintenta a ciegas**, salvo las que llevan `Idempotency-Key`: la venta `[V2]` y, SOLO cuando
    Lucho avise de que el backend con idempotencia está desplegado, el egreso `[K4]` y la entrada `[M1]` (11-oct-2026:
-   hecho en una rama del backend, aún sin desplegar; ver «Idempotencia» en `docs/guia_del_equipo.md`). Hasta ese aviso,
+   mezclado en el `main` del backend, aún sin desplegar; ver «Idempotencia» en `docs/guia_del_equipo.md`). Hasta ese aviso,
    y siempre para el cierre de caja, ante un tiempo de espera primero se consulta cómo quedó.
 5. **Los widgets no llaman al servidor.** Cinco capas: modelos, repositorio, `Notifier` de Riverpod, pantalla, pruebas.
    Cada `Notifier` descarta respuestas de una sesión anterior (`_generacion`). Cópiate de `lib/caja/`.
