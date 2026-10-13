@@ -1,3 +1,5 @@
+import 'avisos.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,16 +24,11 @@ Future<void> refrescarConAviso(BuildContext context, WidgetRef ref) async {
   if (!context.mounted) {
     return;
   }
-  ScaffoldMessenger.of(context)
-    ..clearSnackBars()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(
-          alDia ? 'Actualizado.' : 'No se pudo actualizar. Revisa tu conexión.',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  mostrarAviso(
+    context,
+    alDia ? 'Actualizado.' : 'No se pudo actualizar. Revisa tu conexión.',
+    tipo: alDia ? TipoAviso.exito : TipoAviso.error,
+  );
 }
 
 /// Al volver a la app (por ejemplo, después de cerrar la caja en la web o de dejar el celular un rato), vuelve a

@@ -1,0 +1,62 @@
+[
+  {
+    "nombre": "AV01 el aviso vuelve a ser una barra pegada al borde (no flotante)",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "behavior: SnackBarBehavior\\.floating,",
+    "reemplazo": "behavior: SnackBarBehavior.fixed,"
+  },
+  {
+    "nombre": "AV02 tocar el aviso ya no lo cierra",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "onTap: mensajes\\.hideCurrentSnackBar,",
+    "reemplazo": "onTap: () {},"
+  },
+  {
+    "nombre": "AV03 deslizar el aviso ya no lo cierra",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "dismissDirection: DismissDirection\\.horizontal,",
+    "reemplazo": "dismissDirection: DismissDirection.none,"
+  },
+  {
+    "nombre": "AV04 un aviso nuevo se pone en cola en vez de reemplazar al anterior",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "\\.\\.clearSnackBars\\(\\)\\s*",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "AV05 el éxito dura 4 s en vez de 2 s",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "Icons\\.check_circle_rounded, Duration\\(seconds: 2\\)",
+    "reemplazo": "Icons.check_circle_rounded, Duration(seconds: 4)"
+  },
+  {
+    "nombre": "AV06 el error dura 2 s en vez de 3,5 s",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "Icons\\.error_rounded, Duration\\(milliseconds: 3500\\)",
+    "reemplazo": "Icons.error_rounded, Duration(seconds: 2)"
+  },
+  {
+    "nombre": "AV07 el aviso pierde su ícono",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "Icon\\(tipo\\.icono, color: Colors\\.white, size: 24\\),",
+    "reemplazo": "const SizedBox(),"
+  },
+  {
+    "nombre": "AV08 el error se pinta del color del éxito",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "error\\(Colores\\.peligro,",
+    "reemplazo": "error(Colores.exito,"
+  },
+  {
+    "nombre": "AV09 tocar el borde del aviso (sin texto ni ícono) ya no lo cierra",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "behavior: HitTestBehavior\\.opaque,",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "AV10 «Actualizado» se muestra como error (el tipo se invierte)",
+    "archivo": "lib/ui/refrescar.dart",
+    "patron": "tipo: alDia \\? TipoAviso\\.exito : TipoAviso\\.error",
+    "reemplazo": "tipo: alDia ? TipoAviso.error : TipoAviso.exito"
+  }
+]

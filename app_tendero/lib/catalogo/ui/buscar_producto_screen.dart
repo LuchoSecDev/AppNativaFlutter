@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../ui/avisos.dart';
 import '../../ui/colores.dart';
 import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
@@ -43,8 +44,7 @@ class _BuscarProductoScreenState extends ConsumerState<BuscarProductoScreen> {
     // Quien elige decide si acepta el producto: si no, devuelve el motivo y se queda en la pantalla.
     final rechazo = widget.alElegir!(producto);
     if (rechazo != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(rechazo)));
+      mostrarAviso(context, rechazo, tipo: TipoAviso.aviso);
       return;
     }
     Navigator.of(context).pop(producto);
