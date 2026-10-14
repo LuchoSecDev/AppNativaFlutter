@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../actualizacion/actualizacion_providers.dart';
+import '../../actualizacion/estado_de_version.dart';
+import '../../actualizacion/ui/actualizacion_obligatoria_screen.dart';
 import '../../home_screen.dart';
 import '../../ui/colores.dart';
 import '../auth_providers.dart';
@@ -17,12 +20,21 @@ class AuthGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fase = ref.watch(sesionProvider.select((e) => e.fase));
+    // Si la versión instalada ya no funciona con el servidor, se muestra la pantalla de actualización EN LUGAR del inicio.
+    final debeActualizar = ref.watch(
+      actualizacionProvider.select(
+        (e) => e.nivel == NivelDeActualizacion.obligatoria,
+      ),
+    );
     return switch (fase) {
       FaseSesion.iniciando => const PantallaConectando(),
       FaseSesion.sinSesion => const LoginScreen(),
       FaseSesion.codigo2FA => const Verificacion2FAScreen(),
       FaseSesion.cambioClave => const PrimerCambioClaveScreen(),
-      FaseSesion.activa => const HomeScreen(),
+      FaseSesion.activa =>
+        debeActualizar
+            ? const ActualizacionObligatoriaScreen()
+            : const HomeScreen(),
     };
   }
 }

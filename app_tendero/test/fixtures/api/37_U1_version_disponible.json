@@ -1,0 +1,20 @@
+{
+  "descripcion": "Hay una versión publicada. Si el versionCode instalado es MENOR que minVersionCode la app debe obligar a actualizar; si es menor que versionCode, avisar. No trae la dirección de descarga.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/app/version",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "body": {
+      "disponible": true,
+      "versionCode": 3,
+      "versionName": "1.0.2",
+      "minVersionCode": 2,
+      "notas": "Corrige el escáner con poca luz."
+    }
+  }
+}

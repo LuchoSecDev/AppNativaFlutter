@@ -17,6 +17,19 @@ Pruebas hechas con la app real en un celular, contra el servidor desplegado. Cad
 
 *(Reportado por el responsable de la prueba. Anotar el modelo del celular en las próximas filas.)*
 
+## Pendiente de probar en celular: aviso de versión y actualización (P24-16, fase 1)
+Necesita un APK que incluya esta rama (por ejemplo `1.0.1+2`) instalado a mano, y el servidor con las variables `APP_VERSION_CODE`, `APP_MIN_VERSION_CODE`, `APP_APK_URL` y `APP_APK_SHA256` (ver `docs/distribucion_app_beta.md` del backend). **Anotar el modelo del celular.**
+1. **Versión al pie del inicio:** debe decir «StockPilot 1.0.1 (2)» (nombre y `versionCode`). Es la comprobación clave: confirma que el número que lee `package_info_plus` es el `versionCode` que se compara con el servidor.
+2. **Nada publicado** (`APP_VERSION_CODE` sin definir): no aparece ningún aviso y todo funciona igual.
+3. **Instalada = última** (`APP_VERSION_CODE=2`): tampoco aparece nada.
+4. **Hay una versión nueva** (publicar `1.0.2+3`, `APP_VERSION_CODE=3`, mínima en 1): el inicio muestra «Hay una versión nueva de StockPilot (1.0.2)» con las notas. **Ahora no** lo quita hasta el próximo inicio de sesión. **Descargar** abre el navegador con la descarga del APK; al terminar, instalar encima (el celular pedirá permitir instalar desde el navegador): la app conserva la sesión y el pie dice «1.0.2 (3)».
+5. **Actualización obligatoria** (`APP_MIN_VERSION_CODE=3` con la 2 instalada): aparece «Hay que actualizar la app» **en lugar del inicio**; no hay forma de llegar a **Vender** (el botón atrás no hace nada); **Descargar la versión nueva** funciona; **Cerrar sesión** lleva al login y, al volver a entrar, la pantalla reaparece.
+6. **Descarga no configurada** (versión publicada pero sin `APP_APK_URL`): **Descargar** dice «Todavía no hay una versión para descargar», sin cerrar nada.
+7. **Sin conexión al abrir** (modo avión después del login): la app entra normal; nunca se bloquea por no poder consultar la versión.
+8. **Servidor dormido:** el inicio aparece sin esperar la consulta; el aviso, si corresponde, aparece después.
+9. **Regresión:** abrir y cerrar caja, vender, escáner y refrescar funcionan igual.
+10. **Otro celular:** repetir 1, 4 y 5 en un segundo teléfono (lo harán los compañeros).
+
 ## Pendiente de probar en celular: cierre de caja con arqueo previo (paso 5)
 Necesita el backend con `[K5]` desplegado (rama `feat/caja-arqueo-previo`). Con la caja abierta y algunas ventas en efectivo, un egreso y, si se puede, una venta con tarjeta. **Contrastar siempre en la web** (historial de caja).
 1. **Botón «Cerrar caja»** en la tarjeta de la caja del inicio (solo con la caja abierta).

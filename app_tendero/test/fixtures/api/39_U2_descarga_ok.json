@@ -1,0 +1,23 @@
+{
+  "descripcion": "Con sesión iniciada: la dirección del APK y su huella SHA-256. La app debe verificar la huella del archivo descargado ANTES de instalarlo.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/app/descarga",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "versionCode": 3,
+      "versionName": "1.0.2",
+      "url": "https://descargas.ejemplo.test/stockpilot-1.0.2.apk",
+      "sha256": "3f786850e387550fdab836ed7e6dc881de23001b3f786850e387550fdab836ed",
+      "bytes": 23456789
+    }
+  }
+}
