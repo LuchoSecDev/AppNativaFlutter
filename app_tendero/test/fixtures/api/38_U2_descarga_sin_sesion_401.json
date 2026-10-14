@@ -1,0 +1,16 @@
+{
+  "descripcion": "La dirección de descarga no es pública: sin sesión iniciada responde 401.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/app/descarga",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 401,
+    "body": {
+      "error": "No autenticado"
+    }
+  }
+}

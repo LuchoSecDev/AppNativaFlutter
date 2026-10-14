@@ -1,0 +1,16 @@
+{
+  "descripcion": "Aún no se ha publicado ninguna versión: la app no muestra ningún aviso. No hace falta sesión.",
+  "peticion": {
+    "metodo": "GET",
+    "ruta": "/api/app/version",
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "body": {
+      "disponible": false
+    }
+  }
+}

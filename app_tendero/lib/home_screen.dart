@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'actualizacion/ui/aviso_de_version.dart';
 import 'auth/auth_providers.dart';
 import 'carrito/carrito_providers.dart';
 import 'carrito/ui/carrito_screen.dart';
@@ -51,6 +52,7 @@ class HomeScreen extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(24),
               children: [
+                const AvisoDeVersionNueva(),
                 Text(
                   'Hola, ${info?.nombres ?? ''}',
                   style: const TextStyle(
@@ -123,6 +125,7 @@ class HomeScreen extends ConsumerWidget {
                   icon: const Icon(Icons.qr_code_scanner),
                   label: const Text('Probar el escáner'),
                 ),
+                const EtiquetaDeVersion(),
               ],
             ),
           ),

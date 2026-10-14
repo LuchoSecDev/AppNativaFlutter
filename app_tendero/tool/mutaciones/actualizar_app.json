@@ -1,0 +1,98 @@
+[
+  {
+    "nombre": "AA01 la mínima exacta ya obliga a actualizar (< pasa a <=)",
+    "archivo": "lib/actualizacion/estado_de_version.dart",
+    "patron": "instalada < minima\\)",
+    "reemplazo": "instalada <= minima)"
+  },
+  {
+    "nombre": "AA02 estar en la última versión todavía avisa (< pasa a <=)",
+    "archivo": "lib/actualizacion/estado_de_version.dart",
+    "patron": "instalada < publicada\\.versionCode\\)",
+    "reemplazo": "instalada <= publicada.versionCode)"
+  },
+  {
+    "nombre": "AA03 una mínima mayor que la última se respeta (obliga a actualizar a algo que no existe)",
+    "archivo": "lib/actualizacion/estado_de_version.dart",
+    "patron": "publicada\\.minVersionCode <= publicada\\.versionCode\\s*\\?",
+    "reemplazo": "true ?"
+  },
+  {
+    "nombre": "AA04 sin saber la versión instalada se decide igual (puede bloquear a alguien)",
+    "archivo": "lib/actualizacion/estado_de_version.dart",
+    "patron": "instalada == null \\|\\| publicada == null",
+    "reemplazo": "false"
+  },
+  {
+    "nombre": "AA05 se acepta una dirección de descarga que no es https",
+    "archivo": "lib/actualizacion/actualizacion_models.dart",
+    "patron": "uri\\.scheme != 'https' \\|\\|",
+    "reemplazo": "false ||"
+  },
+  {
+    "nombre": "AA06 se acepta una dirección con usuario y clave incrustados",
+    "archivo": "lib/actualizacion/actualizacion_models.dart",
+    "patron": "\\|\\|\\s*uri\\.userInfo\\.isNotEmpty",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "AA07 se acepta cualquier huella, sin comprobar que sean 64 caracteres",
+    "archivo": "lib/actualizacion/actualizacion_models.dart",
+    "patron": "\\{64\\}",
+    "reemplazo": "+"
+  },
+  {
+    "nombre": "AA08 se cree una versión publicada aunque diga disponible: false",
+    "archivo": "lib/actualizacion/actualizacion_models.dart",
+    "patron": "json\\['disponible'\\] != true",
+    "reemplazo": "false"
+  },
+  {
+    "nombre": "AA09 se aceptan códigos de versión en cero o negativos",
+    "archivo": "lib/actualizacion/actualizacion_models.dart",
+    "patron": "codigo is! int \\|\\| codigo < 1 \\|\\| minima is! int \\|\\| minima < 1",
+    "reemplazo": "codigo is! int || minima is! int"
+  },
+  {
+    "nombre": "AA10 sin versión instalada igual se consulta y se compara",
+    "archivo": "lib/actualizacion/actualizacion_providers.dart",
+    "patron": "if \\(_obsoleto\\(g\\) \\|\\| instalada == null\\) return;",
+    "reemplazo": "if (_obsoleto(g)) return;"
+  },
+  {
+    "nombre": "AA11 una respuesta de una sesión anterior se muestra en la cuenta nueva",
+    "archivo": "lib/actualizacion/actualizacion_providers.dart",
+    "patron": "bool _obsoleto\\(int generacion\\) => generacion != _generacion \\|\\| !ref\\.mounted;",
+    "reemplazo": "bool _obsoleto(int generacion) => false;"
+  },
+  {
+    "nombre": "AA12 un segundo toque pide la descarga otra vez",
+    "archivo": "lib/actualizacion/actualizacion_providers.dart",
+    "patron": "if \\(state\\.abriendo\\) return;",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "AA13 si el navegador falla al abrir, se da por abierto sin avisar",
+    "archivo": "lib/actualizacion/actualizacion_providers.dart",
+    "patron": "\\} catch \\(_\\) \\{\\s*abrio = false;",
+    "reemplazo": "} catch (_) {\n            abrio = true;"
+  },
+  {
+    "nombre": "AA14 el 404 de la descarga se trata como falla en vez de «todavía no hay»",
+    "archivo": "lib/actualizacion/actualizacion_repository.dart",
+    "patron": "if \\(e\\.response\\?\\.statusCode == 404\\) return const DescargaNoDisponible\\(\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "AA15 la pantalla obligatoria nunca se muestra",
+    "archivo": "lib/auth/ui/auth_gate.dart",
+    "patron": "debeActualizar\\s*\\?\\s*const ActualizacionObligatoriaScreen\\(\\)\\s*:\\s*const HomeScreen\\(\\)",
+    "reemplazo": "const HomeScreen()"
+  },
+  {
+    "nombre": "AA16 el aviso sigue visible después de «Ahora no»",
+    "archivo": "lib/actualizacion/ui/aviso_de_version.dart",
+    "patron": "\\|\\|\\s*estado\\.avisoDescartado",
+    "reemplazo": ""
+  }
+]
