@@ -91,13 +91,13 @@
   },
   {
     "nombre": "T616 el cobro fiado no valida el cupo antes de enviar",
-    "archivo": "lib/venta/venta_providers.dart",
+    "archivo": "lib/venta/motivo_para_no_cobrar.dart",
     "patron": "if \\(!cliente\\.alcanzaCupo\\(resumen\\.totalCentavos\\)\\) \\{",
     "reemplazo": "if (false) {"
   },
   {
     "nombre": "T617 el cobro fiado deja pasar una venta sin cliente",
-    "archivo": "lib/venta/venta_providers.dart",
+    "archivo": "lib/venta/motivo_para_no_cobrar.dart",
     "patron": "return 'Debes seleccionar un cliente para vender fiado\\.';",
     "reemplazo": "return null;"
   },

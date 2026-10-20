@@ -5,101 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_providers.dart';
 import '../auth/session_state.dart';
 import '../caja/caja_providers.dart';
-import '../carrito/carrito_models.dart';
 import '../carrito/carrito_providers.dart';
 import '../catalogo/catalogo_providers.dart';
 import '../clientes/cliente.dart';
 import 'almacen_venta.dart';
-import 'clave_de_venta.dart';
 import 'venta_models.dart';
+import 'cobro_estado.dart';
+import 'motivo_para_no_cobrar.dart';
+import 'venta_dependencias.dart';
 import 'venta_repository.dart';
 
-/// Dónde se guarda la venta que se está cobrando. `main()` lo sustituye por el real (`shared_preferences`); las
-/// pruebas, por uno en memoria.
-final almacenVentaPendienteProvider = Provider<AlmacenVentaPendiente>(
-  (ref) => throw UnimplementedError(
-    'almacenVentaPendienteProvider se sustituye en main()',
-  ),
-);
-
-final ventaRepositoryProvider = Provider<VentaRepository>(
-  (ref) => VentaRepository(ref.watch(dioProvider)),
-);
-
-/// De dónde sale la `Idempotency-Key` de cada venta. Es un provider para que las pruebas puedan fijarla.
-final generadorDeClaveProvider = Provider<String Function()>(
-  (ref) => generarUuidV4,
-);
-
-/// Cuánto se espera antes de cada reintento automático tras un tiempo agotado o un error del servidor: 2 s y luego
-/// 5 s (contrato [V2]). Si tras eso sigue sin respuesta, decide el Tendero.
-final esperasDeReintentoProvider = Provider<List<Duration>>(
-  (ref) => const [Duration(seconds: 2), Duration(seconds: 5)],
-);
-
-/// La pausa entre reintentos. Es un provider para que las pruebas no esperen de verdad.
-final pausaDeReintentoProvider = Provider<Future<void> Function(Duration)>(
-  (ref) =>
-      (duracion) => Future<void>.delayed(duracion),
-);
-
-enum FaseCobro {
-  /// No hay venta en curso: se puede cobrar el carrito.
-  libre,
-
-  /// Se está enviando al servidor (o esperando para reintentar).
-  enviando,
-
-  /// No se sabe si el servidor registró la venta. Solo se puede REINTENTAR (misma clave) o descartar con aviso.
-  sinConfirmar,
-
-  /// La venta quedó registrada. El carrito ya se vació.
-  registrada,
-
-  /// El servidor la rechazó sin registrar nada: se puede corregir el carrito y volver a cobrar.
-  rechazada,
-}
-
-/// Lo que la app sabe del cobro en este momento. Inmutable.
-class EstadoCobro {
-  const EstadoCobro({
-    this.fase = FaseCobro.libre,
-    this.cargando = false,
-    this.venta,
-    this.mensaje,
-    this.idVenta,
-    this.repetida = false,
-    this.intento = 0,
-    this.sesionCaducada = false,
-  });
-
-  final FaseCobro fase;
-
-  /// `true` mientras se lee del celular si quedó una venta a medias.
-  final bool cargando;
-
-  /// La venta en curso, sin confirmar o ya registrada.
-  final VentaPendiente? venta;
-
-  /// Un error o aviso para mostrar, en español.
-  final String? mensaje;
-
-  /// El número de la venta (solo en [FaseCobro.registrada]).
-  final int? idVenta;
-
-  /// `true` si el servidor devolvió una venta que ya estaba registrada (un reintento que no duplicó nada).
-  final bool repetida;
-
-  /// Cuántas veces se ha enviado esta venta (1 = el primer envío).
-  final int intento;
-
-  final bool sesionCaducada;
-
-  /// Mientras hay un cobro sin resolver el carrito NO se puede tocar: el reintento debe enviar exactamente lo mismo
-  /// que la primera vez, y la venta se registra una sola vez. También mientras aún no se sabe si quedó una a medias.
-  bool get bloqueaElCarrito =>
-      cargando || fase == FaseCobro.enviando || fase == FaseCobro.sinConfirmar;
-}
+// Quien ya importa venta_providers.dart sigue viendo el estado del cobro y los providers de dependencias.
+export 'cobro_estado.dart';
+export 'venta_dependencias.dart';
 
 final cobroProvider = NotifierProvider<CobroNotifier, EstadoCobro>(
   CobroNotifier.new,
@@ -182,11 +100,12 @@ class CobroNotifier extends Notifier<EstadoCobro> {
       return;
     }
     final resumen = ref.read(resumenCarritoProvider);
-    final rechazo = _motivoParaNoCobrar(
-      resumen,
-      metodo,
-      efectivoRecibido,
-      cliente,
+    final rechazo = motivoParaNoCobrar(
+      puedeVender: ref.read(puedeVenderProvider),
+      resumen: resumen,
+      metodo: metodo,
+      efectivoRecibido: efectivoRecibido,
+      cliente: cliente,
     );
     if (rechazo != null) {
       state = EstadoCobro(fase: FaseCobro.rechazada, mensaje: rechazo);
@@ -257,36 +176,6 @@ class CobroNotifier extends Notifier<EstadoCobro> {
   }
 
   // ───────────────────────── pasos internos ─────────────────────────
-
-  String? _motivoParaNoCobrar(
-    ResumenCarrito resumen,
-    MetodoPago metodo,
-    int? efectivoRecibido,
-    Cliente? cliente,
-  ) {
-    if (!ref.read(puedeVenderProvider)) {
-      return 'No hay una caja abierta. Abre la caja para vender.';
-    }
-    if (!resumen.sePuedeCobrar) {
-      return 'El carrito tiene productos con problemas. Revísalos antes de cobrar.';
-    }
-    if (metodo == MetodoPago.efectivo) {
-      if (efectivoRecibido == null ||
-          efectivoRecibido <= 0 ||
-          efectivoRecibido * 100 < resumen.totalCentavos) {
-        return 'El efectivo recibido no alcanza para cubrir el total.';
-      }
-    }
-    if (metodo == MetodoPago.fiado) {
-      if (cliente == null) {
-        return 'Debes seleccionar un cliente para vender fiado.';
-      }
-      if (!cliente.alcanzaCupo(resumen.totalCentavos)) {
-        return 'El monto de esta venta supera el cupo de crédito del cliente.';
-      }
-    }
-    return null;
-  }
 
   /// Envía la venta y, si no se sabe cómo terminó por un fallo pasajero, la reintenta con pausas. Siempre la MISMA
   /// [venta] (misma clave, mismo cuerpo).
