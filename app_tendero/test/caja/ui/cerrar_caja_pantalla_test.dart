@@ -14,6 +14,7 @@ import 'package:stockpilot/venta/venta_providers.dart';
 
 import '../../support/carrito_apoyo.dart';
 import '../../support/fake_adapter.dart';
+import '../../support/vibracion_apoyo.dart';
 
 /// La pantalla de cerrar la caja (contar → ver la diferencia → confirmar o recontar), con el cliente HTTP REAL y un
 /// servidor falso con los ejemplos reales del backend.
@@ -425,10 +426,12 @@ void main() {
     testWidgets(
       '«Confirmar cierre»: comprobante con el arqueo final; «Volver al inicio» sale',
       (tester) async {
+        final vibraciones = registrarVibraciones(tester);
         await abrir(tester, pantalla: const _Inicio());
         await tester.tap(find.text('Abrir cierre'));
         await tester.pumpAndSettle();
         await hastaRevisar(tester);
+        expect(vibraciones, isEmpty, reason: 'revisar el arqueo no vibra');
 
         programarCajaCerrada();
         servidor.programar(
@@ -442,6 +445,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Caja cerrada'), findsWidgets);
+        expect(vibraciones, [
+          vibracionMedia,
+        ], reason: 'el comprobante vibra una vez');
         expect(find.text('Sobra'), findsOneWidget);
         expect(find.text(r'$57.500'), findsOneWidget);
         expect(find.textContaining('Mientras revisabas'), findsNothing);

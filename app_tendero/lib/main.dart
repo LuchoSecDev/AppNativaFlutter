@@ -13,6 +13,8 @@ import 'carrito/almacen_carrito.dart';
 import 'carrito/carrito_providers.dart';
 import 'config/app_config.dart';
 import 'scanner_screen.dart';
+import 'egresos/almacen_egreso.dart';
+import 'egresos/egreso_providers.dart';
 import 'venta/almacen_venta.dart';
 import 'venta/venta_providers.dart';
 
@@ -53,6 +55,9 @@ Future<void> main() async {
         ),
         almacenVentaPendienteProvider.overrideWithValue(
           AlmacenVentaPendienteLocal(preferencias),
+        ),
+        almacenEgresoPendienteProvider.overrideWithValue(
+          AlmacenEgresoPendienteLocal(preferencias),
         ),
       ],
       child: const MyApp(),

@@ -1,0 +1,29 @@
+{
+  "descripcion": "Gasto de caja chica, con Idempotency-Key (un UUID nuevo por egreso). Queda \"Registrado\", pendiente de aprobación del Administrador.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/caja/egreso",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Idempotency-Key": "5a1e7b3c-2d4f-4e60-8a91-7c3b9d2e4f10",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "monto": 10000,
+      "motivo": "Bolsas y hielo",
+      "categoria": "Otro"
+    }
+  },
+  "respuesta": {
+    "estado": 200,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": true,
+      "message": "Egreso registrado correctamente.",
+      "id_egreso": 1
+    }
+  }
+}

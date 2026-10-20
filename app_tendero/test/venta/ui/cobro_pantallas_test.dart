@@ -18,6 +18,7 @@ import 'package:stockpilot/venta/venta_providers.dart';
 
 import '../../support/carrito_apoyo.dart';
 import '../../support/fake_adapter.dart';
+import '../../support/vibracion_apoyo.dart';
 
 class _CajaAbiertaFija extends CajaNotifier {
   @override
@@ -900,6 +901,53 @@ void main() {
         expect(find.text('Venta registrada'), findsOneWidget);
       },
     );
+  });
+
+  group('la vibración del cobro', () {
+    testWidgets('venta registrada: vibra una vez al mostrar el comprobante', (
+      tester,
+    ) async {
+      final vibraciones = registrarVibraciones(tester);
+      await abrir(tester);
+      programarVentaOk();
+      await abrirCobro(tester);
+      await escribir(tester, '10000');
+      expect(vibraciones, isEmpty, reason: 'ni elegir ni escribir vibran');
+      await confirmar(tester);
+      expect(find.text('Venta registrada'), findsOneWidget);
+      expect(vibraciones, [vibracionMedia]);
+    });
+
+    testWidgets('rechazo del servidor: vibra fuerte, una vez', (tester) async {
+      final vibraciones = registrarVibraciones(tester);
+      await abrir(tester);
+      servidor.programar(
+        'POST',
+        ruta,
+        RespuestaFalsa.deEjemplo('20_V2_stock_insuficiente_400'),
+      );
+      await abrirCobro(tester);
+      await escribir(tester, '10000');
+      await confirmar(tester);
+      expect(
+        find.text('Stock insuficiente para el producto: Arroz Diana 1Kg'),
+        findsOneWidget,
+      );
+      expect(vibraciones, [vibracionFuerte]);
+    });
+
+    testWidgets('sin red (venta sin confirmar): vibra una vez, de atención', (
+      tester,
+    ) async {
+      final vibraciones = registrarVibraciones(tester);
+      await abrir(tester);
+      programarSinRed();
+      await abrirCobro(tester);
+      await escribir(tester, '10000');
+      await confirmar(tester);
+      expect(find.textContaining('No la cobres otra vez'), findsOneWidget);
+      expect(vibraciones, [vibracionMedia]);
+    });
   });
 
   group('desde la pantalla de inicio', () {
