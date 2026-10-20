@@ -104,7 +104,7 @@ Cada función sigue **las mismas cinco capas**; cópiate de `lib/caja/` (la más
   - Es una clave nueva (UUID v4) **por operación**, y **la misma en todos sus reintentos**. Son 8 a 100 caracteres: letras, números, guion o guion bajo.
   - Misma clave y misma carga → **200** con la misma respuesta y `Idempotent-Replayed: true`, sin duplicar nada. Misma clave con otra carga → **422** `IDEMPOTENCY_KEY_REUSED` (es un error de la app). Una operación que falla con 400 o 404 no consume la clave.
   - **No** se añade a `[K2]` ni a `[K3]`. Si se reintentan por error no duplican nada, pero siguen sin reintentarse a ciegas: primero se consulta.
-- **Qué implica para T1 y T2** (copia el patrón de la venta: `venta/clave_de_venta.dart` y `venta/almacen_venta.dart`):
+- **Qué implica para T1 y T2** (copia el patrón de la venta: `api/clave_de_idempotencia.dart` y `api/reintentos_providers.dart` para la clave y los reintentos, y `venta/almacen_venta.dart` para guardar lo pendiente):
   - **Guardar la operación pendiente en el celular** con su clave, hasta saber cómo terminó, igual que la venta sin confirmar. Si se cierra la app a mitad, el reintento usa la misma clave y la misma carga.
   - **T1, la foto:** la carga que se compara incluye `foto_soporte`. Guarda la foto **ya comprimida** y reenvía exactamente los mismos bytes; si la vuelves a comprimir en cada reintento puede salir distinta y el servidor respondería 422.
   - **T2, la respuesta repetida** trae los `stockAnterior` y `stockNuevo` **de entonces**, no el stock de ahora. No los uses para calcular el stock actual.

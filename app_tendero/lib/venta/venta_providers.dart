@@ -10,12 +10,14 @@ import '../catalogo/catalogo_providers.dart';
 import '../clientes/cliente.dart';
 import 'almacen_venta.dart';
 import 'venta_models.dart';
+import '../api/reintentos_providers.dart';
 import 'cobro_estado.dart';
 import 'motivo_para_no_cobrar.dart';
 import 'venta_dependencias.dart';
 import 'venta_repository.dart';
 
 // Quien ya importa venta_providers.dart sigue viendo el estado del cobro y los providers de dependencias.
+export '../api/reintentos_providers.dart';
 export 'cobro_estado.dart';
 export 'venta_dependencias.dart';
 

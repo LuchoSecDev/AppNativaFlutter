@@ -12,7 +12,7 @@ import 'package:stockpilot/egresos/egreso_borrador.dart';
 import 'package:stockpilot/egresos/egreso_models.dart';
 import 'package:stockpilot/egresos/egreso_providers.dart';
 import 'package:stockpilot/egresos/egreso_repository.dart';
-import 'package:stockpilot/venta/venta_providers.dart';
+import 'package:stockpilot/api/reintentos_providers.dart';
 
 import 'carrito_apoyo.dart';
 import 'fake_adapter.dart';
