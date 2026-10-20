@@ -28,7 +28,7 @@ App nativa (Flutter, **Android primero**) para que el Tendero de una tienda de b
    flutter analyze
    flutter run --dart-define=API_BASE_URL=https://<servidor>
    ```
-   La dirección del servidor va **solo** en `--dart-define`.
+   La dirección del servidor va **solo** en `--dart-define`. En el celular aparece como **«StockPilot (dev)»**, aparte de la app oficial (no la pisa).
 
 ## Cómo está organizado
 ```
