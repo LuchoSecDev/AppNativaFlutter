@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../ui/colores.dart';
 import '../../ui/formato.dart';
+import '../leyendas_de_producto.dart';
 import '../producto.dart';
+import 'pildora_de_leyenda.dart';
 
 /// Muestra los datos de un producto en una ficha centrada y flotante (no pegada al pie de la pantalla).
 ///
@@ -13,23 +15,6 @@ Future<void> mostrarFichaDeProducto(BuildContext context, Producto producto) =>
       builder: (_) => FichaDeProducto(producto: producto),
     );
 
-/// La etiqueta del estado del stock de [p]: qué dice y de qué color es.
-///
-/// Un producto inactivo no se ofrece para vender, así que eso manda sobre su stock. Después, lo agotado se decide por
-/// las unidades (no solo por lo que diga `nivelStock`), y lo demás sale del nivel que calcula el servidor.
-({String texto, Color color}) estadoDeStock(Producto p) {
-  if (!p.estaDisponible) {
-    return (texto: 'Inactivo', color: Colors.grey.shade700);
-  }
-  if (p.agotado) return (texto: 'Agotado', color: Colores.peligro);
-  return switch (p.nivelStock) {
-    'agotado' => (texto: 'Agotado', color: Colores.peligro),
-    'critico' => (texto: 'Stock crítico', color: Colores.peligro),
-    'reponer' => (texto: 'Por reponer', color: Colores.aviso),
-    _ => (texto: 'Disponible', color: Colores.exito),
-  };
-}
-
 class FichaDeProducto extends StatelessWidget {
   const FichaDeProducto({super.key, required this.producto});
 
@@ -38,7 +23,7 @@ class FichaDeProducto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = producto;
-    final estado = estadoDeStock(p);
+    final leyendas = leyendasDeProducto(p);
     final unidades = '${p.cantidad} ${p.cantidad == 1 ? 'unidad' : 'unidades'}';
 
     return Dialog(
@@ -96,7 +81,8 @@ class FichaDeProducto extends StatelessWidget {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _Etiqueta(texto: estado.texto, color: estado.color),
+                        for (final l in leyendas)
+                          PildoraDeLeyenda(l, conTooltip: false),
                         Text(
                           unidades,
                           style: const TextStyle(
@@ -107,6 +93,19 @@ class FichaDeProducto extends StatelessWidget {
                         ),
                       ],
                     ),
+                    // La ayuda de cada leyenda, a la vista: qué pasó y qué conviene hacer.
+                    for (final l in leyendas)
+                      if (l.ayuda != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            l.ayuda!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
                     const SizedBox(height: 16),
                     const Divider(height: 1),
                     const SizedBox(height: 8),
@@ -133,33 +132,6 @@ class FichaDeProducto extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// La píldora de color con el estado del stock.
-class _Etiqueta extends StatelessWidget {
-  const _Etiqueta({required this.texto, required this.color});
-
-  final String texto;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        texto,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: color,
         ),
       ),
     );

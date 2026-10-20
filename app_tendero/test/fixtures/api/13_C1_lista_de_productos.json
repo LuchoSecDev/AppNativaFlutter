@@ -39,7 +39,9 @@
         "velocity": "0.00000000000000000000",
         "velocity_7d": "0.00000000000000000000",
         "nivel_stock": "ok",
-        "urgencia": "Puede esperar"
+        "urgencia": "Puede esperar",
+        "estado_vencimiento": null,
+        "sobrestock": false
       },
       {
         "id_producto": 1,
@@ -67,7 +69,9 @@
         "velocity": "0.00000000000000000000",
         "velocity_7d": "0.00000000000000000000",
         "nivel_stock": "ok",
-        "urgencia": "Puede esperar"
+        "urgencia": "Puede esperar",
+        "estado_vencimiento": null,
+        "sobrestock": false
       }
     ]
   }

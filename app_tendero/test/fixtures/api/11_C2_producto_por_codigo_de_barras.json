@@ -36,7 +36,8 @@
         "fecha_vencimiento": null,
         "frecuencia_compra_dias": 7,
         "precio_original": null,
-        "fecha_fin_promocion": null
+        "fecha_fin_promocion": null,
+        "estado_vencimiento": null
       }
     }
   }
