@@ -38,6 +38,8 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // El nombre que se ve bajo el ícono; cada tipo de compilación puede cambiarlo (ver `buildTypes`).
+        manifestPlaceholders["appName"] = "StockPilot"
     }
 
     signingConfigs {
@@ -52,6 +54,15 @@ android {
     }
 
     buildTypes {
+        // La compilación de PRUEBA (`flutter run`, modo debug) se instala AL LADO de la oficial, no encima: con otro
+        // identificador, Android las trata como dos apps. Antes tenían el mismo identificador y distinta firma (la de
+        // depuración y la de Luis), y Android no deja instalar una sobre otra: al probar había que DESINSTALAR la oficial
+        // y se perdían su sesión y lo guardado en el celular. Ahora cada una conserva lo suyo.
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-dev"
+            manifestPlaceholders["appName"] = "StockPilot (dev)"
+        }
         release {
             // Con la llave de Luis cuando existe `key.properties`; si no, la de depuración (solo para que `flutter run` en debug
             // y las pruebas sigan funcionando). Un release con la llave de depuración está BLOQUEADO más abajo, salvo que se pida

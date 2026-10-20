@@ -32,6 +32,7 @@ Y en este repositorio: `docs/pruebas_sesion.md` (qué se probó en celular y qu�
 - **La dirección del servidor** se pide a Lucho y va **solo** en `--dart-define`. Las **cuentas de prueba** también se piden a Lucho; nunca se escriben en un archivo del repositorio.
 - El servidor gratuito (Render) se duerme a los 15 minutos y tarda cerca de un minuto en despertar: la primera petición puede parecer colgada.
 - Hoy se desarrolla contra el servidor desplegado, con tiendas de prueba. **No uses cuentas ni datos de una tienda real.**
+- **`flutter run` instala la app como «StockPilot (dev)»** (identificador `com.lem.stockpilot.debug`), **al lado** de la oficial (`StockPilot`, `com.lem.stockpilot`, la que reparte Lucho como APK). Son dos apps distintas: cada una tiene su propia sesión, su carrito guardado y sus permisos (el de la cámara hay que darlo una vez en cada una), y una nunca pisa a la otra. La oficial no sirve para probar tus cambios: se compila con `flutter run`, no con el APK.
 - **No subas nunca:** `*.jks`, `android/key.properties`, `.env`, `local.properties`, `.idea`, cookies, tokens. El `.gitignore` ya cubre varios, pero **revisa tu `git diff` antes de cada push**.
 
 ## 3. Cómo está hecho el código (léelo antes de escribir una línea)
