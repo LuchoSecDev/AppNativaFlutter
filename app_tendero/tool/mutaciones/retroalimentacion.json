@@ -67,7 +67,7 @@
   },
   {
     "nombre": "RT12 el comprobante de la caja cerrada no vibra",
-    "archivo": "lib/caja/ui/cerrar_caja_screen.dart",
+    "archivo": "lib/caja/ui/comprobante_de_cierre.dart",
     "patron": "return VibrarAlAparecer\\(\\s*intensidad: Intensidad\\.media,\\s*child: Column\\(\\s*crossAxisAlignment: CrossAxisAlignment\\.stretch,\\s*children: \\[\\s*const Icon\\(Icons\\.lock",
     "reemplazo": "return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const Icon(Icons.lock"
   }
