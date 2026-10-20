@@ -1,0 +1,110 @@
+[
+  {
+    "nombre": "EG01 el egreso se envía sin la Idempotency-Key",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "options: Options\\(headers: \\{'Idempotency-Key': egreso\\.clave\\}\\),",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG02 un 200 sin id_egreso se da por registrado",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "cuerpo\\['success'\\] == true &&\\s*cuerpo\\['id_egreso'\\] is int\\)",
+    "reemplazo": "cuerpo['success'] == true)"
+  },
+  {
+    "nombre": "EG03 un 200 con success false se da por registrado",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "cuerpo\\['success'\\] == true &&",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG04 el reintento ya registrado no se marca como repetido",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "repetido: r\\.headers\\.value\\('idempotent-replayed'\\) == 'true',",
+    "reemplazo": "repetido: false,"
+  },
+  {
+    "nombre": "EG05 una sesión caducada no se marca como tal",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "sesionCaducada: true,",
+    "reemplazo": "sesionCaducada: false,"
+  },
+  {
+    "nombre": "EG06 una sesión caducada se reintenta sola",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "reintentoAutomatico: false,\\s*sesionCaducada: true,",
+    "reemplazo": "reintentoAutomatico: true,\n        sesionCaducada: true,"
+  },
+  {
+    "nombre": "EG07 un 500 se toma como rechazo (se pierde que pudo registrarse)",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "estado >= 500",
+    "reemplazo": "estado > 599"
+  },
+  {
+    "nombre": "EG08 un 429 se reintenta solo",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "Demasiadas peticiones\\. Espera un momento y reintenta\\.',\\s*reintentoAutomatico: false,",
+    "reemplazo": "Demasiadas peticiones. Espera un momento y reintenta.',\n        reintentoAutomatico: true,"
+  },
+  {
+    "nombre": "EG09 el 422 por clave reutilizada no se reconoce",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "datos\\['code'\\] == _claveReutilizada",
+    "reemplazo": "false"
+  },
+  {
+    "nombre": "EG10 un rechazo sin mensaje queda vacío",
+    "archivo": "lib/egresos/egreso_repository.dart",
+    "patron": "mensaje \\?\\? 'No se pudo registrar el gasto\\.',",
+    "reemplazo": "mensaje ?? '',"
+  },
+  {
+    "nombre": "EG11 el monto se envía en centavos en vez de pesos",
+    "archivo": "lib/egresos/egreso_models.dart",
+    "patron": "'monto': montoPesos,",
+    "reemplazo": "'monto': montoPesos * 100,"
+  },
+  {
+    "nombre": "EG12 el cuerpo no envía la categoría",
+    "archivo": "lib/egresos/egreso_models.dart",
+    "patron": "'categoria': categoria\\.valorApi,\\s*\\};\\s*Map<String, dynamic> aJson",
+    "reemplazo": "};\n\n  Map<String, dynamic> aJson"
+  },
+  {
+    "nombre": "EG13 un pendiente guardado con monto 0 se acepta al leerlo",
+    "archivo": "lib/egresos/egreso_models.dart",
+    "patron": "monto <= 0 \\|\\|",
+    "reemplazo": "monto < 0 ||"
+  },
+  {
+    "nombre": "EG14 un pendiente con la clave dañada se acepta al leerlo",
+    "archivo": "lib/egresos/egreso_models.dart",
+    "patron": "!esClaveDeIdempotenciaValida\\(clave\\) \\|\\|",
+    "reemplazo": "false ||"
+  },
+  {
+    "nombre": "EG15 una categoría se escribe distinto de como la espera el servidor",
+    "archivo": "lib/egresos/egreso_models.dart",
+    "patron": "insumosYBolsas\\('Insumos / Bolsas'\\)",
+    "reemplazo": "insumosYBolsas('Insumos')"
+  },
+  {
+    "nombre": "EG16 una categoría en minúsculas se reconoce (se adivina)",
+    "archivo": "lib/egresos/egreso_models.dart",
+    "patron": "if \\(c\\.valorApi == valor\\) return c;",
+    "reemplazo": "if (c.valorApi.toLowerCase() == '$valor'.toLowerCase()) return c;"
+  },
+  {
+    "nombre": "EG17 la clave de 7 caracteres se acepta",
+    "archivo": "lib/api/clave_de_idempotencia.dart",
+    "patron": "\\{8,100\\}",
+    "reemplazo": "{7,100}"
+  },
+  {
+    "nombre": "EG18 la clave de más de 100 caracteres se acepta",
+    "archivo": "lib/api/clave_de_idempotencia.dart",
+    "patron": "\\{8,100\\}",
+    "reemplazo": "{8,101}"
+  }
+]

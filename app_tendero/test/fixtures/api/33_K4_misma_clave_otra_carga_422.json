@@ -1,0 +1,29 @@
+{
+  "descripcion": "La misma clave con otra carga es un error de la app (reutilizó una clave): no se registra nada.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/caja/egreso",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Idempotency-Key": "5a1e7b3c-2d4f-4e60-8a91-7c3b9d2e4f10",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "monto": 20000,
+      "motivo": "Otro gasto distinto",
+      "categoria": "Otro"
+    }
+  },
+  "respuesta": {
+    "estado": 422,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "code": "IDEMPOTENCY_KEY_REUSED",
+      "error": "Esa Idempotency-Key ya se usó con un egreso distinto. Genera una clave nueva para cada egreso."
+    }
+  }
+}

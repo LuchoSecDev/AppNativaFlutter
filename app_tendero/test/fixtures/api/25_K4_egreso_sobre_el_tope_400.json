@@ -1,0 +1,25 @@
+{
+  "descripcion": "Egreso mayor al tope del Tendero (limiteEgresoTendero de session-info).",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/caja/egreso",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "monto": 150001,
+      "motivo": "Gasto grande"
+    }
+  },
+  "respuesta": {
+    "estado": 400,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "error": "Por seguridad, tu rol no permite registrar gastos mayores a $150.000. Consulta al administrador."
+    }
+  }
+}
