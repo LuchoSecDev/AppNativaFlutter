@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stockpilot/catalogo/estado_vencimiento.dart';
 import 'package:stockpilot/catalogo/producto.dart';
 import 'package:stockpilot/catalogo/ui/ficha_de_producto.dart';
-import 'package:stockpilot/ui/colores.dart';
 
-/// La ficha de un producto: qué muestra, cómo marca el estado del stock y cómo se cierra.
+import '../../support/estado_producto_apoyo.dart' show vencimiento;
+
+/// La ficha de un producto: qué muestra, qué leyendas lleva (las de la web) y cómo se cierra.
 void main() {
   Producto producto({
     String nombre = 'Aceite Gourmet 1L',
@@ -15,6 +17,8 @@ void main() {
     String? codigoBarras,
     String codigo = 'ACE-001',
     String categoria = 'Aceites',
+    EstadoVencimiento? vence,
+    bool sobrestock = false,
   }) => Producto(
     id: 1,
     codigo: codigo,
@@ -25,6 +29,8 @@ void main() {
     cantidad: cantidad,
     estado: estado,
     nivelStock: nivelStock,
+    estadoVencimiento: vence,
+    sobrestock: sobrestock,
   );
 
   /// Abre la ficha encima de una pantalla con un botón, como se usa en la app.
@@ -92,51 +98,68 @@ void main() {
     });
   });
 
-  group('el estado del stock', () {
-    const casos = {
-      'ok': ('Disponible', Colores.exito),
-      'reponer': ('Por reponer', Colores.aviso),
-      'critico': ('Stock crítico', Colores.peligro),
-      'agotado': ('Agotado', Colores.peligro),
-    };
-
-    for (final c in casos.entries) {
-      test('nivel «${c.key}» → ${c.value.$1}', () {
-        final e = estadoDeStock(
-          producto(nivelStock: c.key, cantidad: c.key == 'agotado' ? 0 : 5),
-        );
-        expect(e.texto, c.value.$1);
-        expect(e.color, c.value.$2);
-      });
-    }
-
-    test('sin unidades es «Agotado» aunque el nivel diga otra cosa', () {
-      final e = estadoDeStock(producto(cantidad: 0, nivelStock: 'ok'));
-      expect(e.texto, 'Agotado');
-      expect(e.color, Colores.peligro);
+  group('las leyendas del estado', () {
+    testWidgets('un producto sin novedad dice «Suficiente»', (tester) async {
+      await abrir(tester, producto());
+      expect(enFicha(find.text('Suficiente')), findsOneWidget);
     });
 
-    test('un producto inactivo es «Inactivo», aunque tenga stock', () {
-      expect(
-        estadoDeStock(producto(estado: 'Inactivo', cantidad: 9)).texto,
-        'Inactivo',
-      );
-      expect(
-        estadoDeStock(producto(estado: 'Inactivo', cantidad: 0)).texto,
-        'Inactivo',
-      );
-    });
-
-    test(
-      'un nivel desconocido no inventa una alarma: se lee como disponible',
-      () {
-        expect(estadoDeStock(producto(nivelStock: 'raro')).texto, 'Disponible');
-      },
-    );
-
-    testWidgets('la etiqueta se ve en la ficha', (tester) async {
+    testWidgets('los niveles de stock usan las palabras de la web', (
+      tester,
+    ) async {
       await abrir(tester, producto(nivelStock: 'critico', cantidad: 2));
-      expect(enFicha(find.text('Stock crítico')), findsOneWidget);
+      expect(enFicha(find.text('Por agotarse')), findsOneWidget);
+      expect(enFicha(find.text('Stock crítico')), findsNothing);
+    });
+
+    testWidgets('«Pedir más» y «Agotado»', (tester) async {
+      await abrir(tester, producto(nivelStock: 'reponer'));
+      expect(enFicha(find.text('Pedir más')), findsOneWidget);
+      await tester.tap(find.byTooltip('Cerrar'));
+      await tester.pumpAndSettle();
+      await abrir(tester, producto(cantidad: 0, nivelStock: 'agotado'));
+      expect(enFicha(find.text('Agotado')), findsOneWidget);
+    });
+
+    testWidgets('un producto inactivo dice «Inactivo», aunque tenga stock', (
+      tester,
+    ) async {
+      await abrir(tester, producto(estado: 'Inactivo', cantidad: 9));
+      expect(enFicha(find.text('Inactivo')), findsOneWidget);
+      expect(enFicha(find.text('Suficiente')), findsNothing);
+    });
+
+    testWidgets('vencido: la leyenda y, debajo, qué hacer', (tester) async {
+      await abrir(
+        tester,
+        producto(vence: vencimiento(TipoVencimiento.vencido, -3)),
+      );
+      expect(enFicha(find.text('Vencido')), findsOneWidget);
+      expect(
+        enFicha(find.text('Venció hace 3 días: retíralo de la venta')),
+        findsOneWidget,
+      );
+      expect(enFicha(find.text('Suficiente')), findsNothing);
+    });
+
+    testWidgets('vence en N días y sobrestock, con su ayuda', (tester) async {
+      await abrir(
+        tester,
+        producto(
+          sobrestock: true,
+          vence: vencimiento(TipoVencimiento.critico, 3),
+        ),
+      );
+      expect(enFicha(find.text('Vence en 3 días')), findsOneWidget);
+      expect(
+        enFicha(find.text('Vence en 3 días: conviene rematarlo')),
+        findsOneWidget,
+      );
+      expect(enFicha(find.text('Sobrestock')), findsOneWidget);
+      expect(
+        enFicha(find.text('Tienes más de lo que vendes: es capital quieto')),
+        findsOneWidget,
+      );
     });
   });
 

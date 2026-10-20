@@ -9,8 +9,10 @@ import '../../ui/piezas_de_pantalla.dart';
 import '../../ui/refrescar.dart';
 import '../buscar_productos.dart';
 import '../catalogo_providers.dart';
+import '../leyendas_de_producto.dart';
 import '../producto.dart';
 import 'ficha_de_producto.dart';
+import 'pildora_de_leyenda.dart';
 
 /// Pantalla para buscar un producto escribiendo su nombre, categoría o código.
 ///
@@ -183,57 +185,33 @@ class _FilaDeProducto extends StatelessWidget {
           color: agotado ? Colors.black45 : Colores.tinta,
         ),
       ),
-      subtitle: Row(
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Flexible(
-            child: Text(
-              [
-                if (producto.categoria.isNotEmpty) producto.categoria,
-                'Stock: ${producto.cantidad}',
-              ].join(' · '),
-            ),
+          Text(
+            [
+              if (producto.categoria.isNotEmpty) producto.categoria,
+              'Stock: ${producto.cantidad}',
+            ].join(' · '),
           ),
-          if (agotado) ...[
-            const SizedBox(width: 8),
-            const _Etiqueta('Agotado', Colores.peligro, Colores.peligroSuave),
-          ],
-          // Sin precio (0 o ilegible): casi siempre es un error de datos y no se puede vender.
-          if (sinPrecio) ...[
-            const SizedBox(width: 8),
-            const _Etiqueta('Sin precio', Colores.aviso, Colores.avisoSuave),
-          ],
+          // Las leyendas de la web (agotado, vencido, sobrestock...). «Sin precio» no es de la web: sin precio (0 o
+          // ilegible) casi siempre es un error de datos y no se puede vender.
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final l in leyendasDeProducto(producto)) PildoraDeLeyenda(l),
+              if (sinPrecio)
+                const PildoraDeLeyenda(
+                  Leyenda('Sin precio', TonoLeyenda.aviso),
+                ),
+            ],
+          ),
         ],
       ),
       trailing: Text(
         formatoPesos(producto.precio),
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
-class _Etiqueta extends StatelessWidget {
-  const _Etiqueta(this.texto, this.color, this.fondo);
-
-  final String texto;
-  final Color color;
-  final Color fondo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: fondo,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        texto,
-        style: TextStyle(
-          fontSize: 12,
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

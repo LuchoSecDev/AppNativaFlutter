@@ -1,0 +1,32 @@
+{
+  "descripcion": "Un producto cuya fecha de vencimiento ya pasó (y que aún tiene unidades) no se puede vender: code PRODUCTO_VENCIDO. Un solo producto así rechaza TODO el carrito y no se descuenta nada. Lo que vence hoy sí se vende. La app puede mostrar el mensaje tal cual; el producto lleva estado_vencimiento en [C1] desde antes.",
+  "peticion": {
+    "metodo": "POST",
+    "ruta": "/api/registrar-venta-carrito",
+    "headers": {
+      "Accept": "application/json",
+      "X-CSRF-Token": "<valor de GET /api/csrf-token>",
+      "Idempotency-Key": "66666666-aaaa-4bbb-8ccc-000000000006",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "items": [
+        {
+          "id_producto": 1,
+          "cantidad": 1
+        }
+      ]
+    }
+  },
+  "respuesta": {
+    "estado": 400,
+    "headers": {
+      "Set-Cookie": "connect.sid=<valor opaco>; Path=/; Expires=<30 minutos después de la última petición>; HttpOnly; SameSite=Strict"
+    },
+    "body": {
+      "success": false,
+      "code": "PRODUCTO_VENCIDO",
+      "error": "El producto «Yogur natural 1L» está vencido y no se puede vender. Pide al administrador que lo dé de baja."
+    }
+  }
+}

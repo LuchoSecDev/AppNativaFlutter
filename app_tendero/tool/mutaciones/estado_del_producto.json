@@ -1,0 +1,200 @@
+[
+  {
+    "nombre": "EP01 un producto inactivo ya no manda sobre las demás leyendas",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "if \\(!p\\.estaDisponible\\) \\{",
+    "reemplazo": "if (false) {"
+  },
+  {
+    "nombre": "EP02 sin unidades deja de decir Agotado cuando el nivel dice ok",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "if \\(p\\.agotado\\) \\{",
+    "reemplazo": "if (false) {"
+  },
+  {
+    "nombre": "EP03 el nivel crítico usa la palabra inventada «Stock crítico» y no la de la web",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "'Por agotarse'",
+    "reemplazo": "'Stock crítico'"
+  },
+  {
+    "nombre": "EP04 «Pedir más» se pinta de rojo en vez de ámbar",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "Leyenda\\('Pedir más', TonoLeyenda\\.aviso\\)",
+    "reemplazo": "Leyenda('Pedir más', TonoLeyenda.peligro)"
+  },
+  {
+    "nombre": "EP05 «Suficiente» sale aunque haya sobrestock",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "stock == null && !p\\.sobrestock && vencimiento == null",
+    "reemplazo": "stock == null && vencimiento == null"
+  },
+  {
+    "nombre": "EP06 «Suficiente» sale aunque el producto venza pronto",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "stock == null && !p\\.sobrestock && vencimiento == null",
+    "reemplazo": "stock == null && !p.sobrestock"
+  },
+  {
+    "nombre": "EP07 el sobrestock no se muestra",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "if \\(p\\.sobrestock\\)",
+    "reemplazo": "if (false)"
+  },
+  {
+    "nombre": "EP08 el texto de ayuda del sobrestock cambia",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "es capital quieto",
+    "reemplazo": "es dinero parado"
+  },
+  {
+    "nombre": "EP09 lo vencido ayer se escribe como «hace 1 días»",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "atras == 1 \\? 'Venció ayer'",
+    "reemplazo": "atras == 99 ? 'Venció ayer'"
+  },
+  {
+    "nombre": "EP10 mañana se escribe «Vence en 1 días»",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "1 => 'Vence mañana'",
+    "reemplazo": "1 => 'Vence en 1 días'"
+  },
+  {
+    "nombre": "EP11 lo vencido deja de ser rojo sólido",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "'Vencido',\\s+TonoLeyenda\\.vencido",
+    "reemplazo": "'Vencido', TonoLeyenda.peligro"
+  },
+  {
+    "nombre": "EP12 de 8 a 30 días se pinta de rojo en vez de ámbar",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "e\\.tipo == TipoVencimiento\\.proximo \\? TonoLeyenda\\.aviso",
+    "reemplazo": "e.tipo == TipoVencimiento.critico ? TonoLeyenda.aviso"
+  },
+  {
+    "nombre": "EP13 la ayuda de «vence hoy» pierde el consejo de venderlo",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "véndelo hoy o retíralo",
+    "reemplazo": "retíralo"
+  },
+  {
+    "nombre": "EP14 la ayuda de «vence en N días» cambia",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "conviene rematarlo",
+    "reemplazo": "cuidado"
+  },
+  {
+    "nombre": "EP15 la ayuda de lo vencido no dice que se retire de la venta",
+    "archivo": "lib/catalogo/leyendas_de_producto.dart",
+    "patron": "retíralo de la venta",
+    "reemplazo": "revísalo"
+  },
+  {
+    "nombre": "EP20 un vencido sin unidades cuenta como vencido (debería ser un agotado)",
+    "archivo": "lib/catalogo/producto.dart",
+    "patron": " && cantidad > 0;",
+    "reemplazo": ";"
+  },
+  {
+    "nombre": "EP21 lo que vence HOY se trata como vencido (y no se vendería)",
+    "archivo": "lib/catalogo/producto.dart",
+    "patron": "estadoVencimiento\\?\\.tipo == TipoVencimiento\\.vencido",
+    "reemplazo": "estadoVencimiento != null"
+  },
+  {
+    "nombre": "EP22 el sobrestock del servidor no se lee",
+    "archivo": "lib/catalogo/producto.dart",
+    "patron": "json\\['sobrestock'\\] == true",
+    "reemplazo": "false"
+  },
+  {
+    "nombre": "EP23 el estado_vencimiento del servidor no se lee",
+    "archivo": "lib/catalogo/producto.dart",
+    "patron": "EstadoVencimiento\\.desdeJson\\(\\s*json\\['estado_vencimiento'\\],?\\s*\\)",
+    "reemplazo": "null"
+  },
+  {
+    "nombre": "EP24 un dias ilegible rompe en vez de ignorarse",
+    "archivo": "lib/catalogo/estado_vencimiento.dart",
+    "patron": "if \\(dias is! num\\) \\{",
+    "reemplazo": "if (dias == null) {"
+  },
+  {
+    "nombre": "EP25 un tipo que la app no conoce se lee como vencido",
+    "archivo": "lib/catalogo/estado_vencimiento.dart",
+    "patron": "    return null;\\s+\\}\\s+\\}\\s*$",
+    "reemplazo": "    return EstadoVencimiento(tipo: TipoVencimiento.vencido, dias: dias.toInt());\n  }\n}\n"
+  },
+  {
+    "nombre": "EC01 el carrito deja agregar un vencido",
+    "archivo": "lib/carrito/carrito_providers.dart",
+    "patron": "if \\(producto\\.vencidoConUnidades\\) \\{",
+    "reemplazo": "if (false) {"
+  },
+  {
+    "nombre": "EC02 sumar una unidad a una línea vencida sí deja",
+    "archivo": "lib/carrito/carrito_providers.dart",
+    "patron": "producto != null && producto\\.vencidoConUnidades",
+    "reemplazo": "false"
+  },
+  {
+    "nombre": "EC03 una línea que venció después de agregarla se puede cobrar",
+    "archivo": "lib/carrito/carrito_providers.dart",
+    "patron": "else if \\(producto\\.vencidoConUnidades\\)",
+    "reemplazo": "else if (false)"
+  },
+  {
+    "nombre": "EC04 un inactivo vencido responde «vencido» en vez de «inactivo»",
+    "archivo": "lib/carrito/carrito_providers.dart",
+    "patron": "if \\(!producto\\.estaDisponible\\) \\{\\s+return ResultadoAgregar\\.noDisponible;",
+    "reemplazo": "if (!producto.estaDisponible && !producto.vencidoConUnidades) {\n      return ResultadoAgregar.noDisponible;"
+  },
+  {
+    "nombre": "EC05 la línea vencida pierde frente al problema de stock",
+    "archivo": "lib/carrito/carrito_providers.dart",
+    "patron": "else if \\(producto\\.vencidoConUnidades\\)",
+    "reemplazo": "else if (producto.vencidoConUnidades && linea.cantidad <= producto.cantidad)"
+  },
+  {
+    "nombre": "EC06 el aviso de vencido no dice que no se puede vender",
+    "archivo": "lib/carrito/carrito_models.dart",
+    "patron": "» está vencido y no se puede vender\\.",
+    "reemplazo": "» ha vencido."
+  },
+  {
+    "nombre": "EC07 el problema de la línea vencida no dice cómo salir de él",
+    "archivo": "lib/carrito/carrito_models.dart",
+    "patron": " Quítalo del carrito\\.",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EU01 la ficha no escribe la ayuda a la vista",
+    "archivo": "lib/catalogo/ui/ficha_de_producto.dart",
+    "patron": "if \\(l\\.ayuda != null\\)",
+    "reemplazo": "if (false)"
+  },
+  {
+    "nombre": "EU02 la lista no muestra las leyendas",
+    "archivo": "lib/catalogo/ui/buscar_producto_screen.dart",
+    "patron": "for \\(final l in leyendasDeProducto\\(producto\\)\\) PildoraDeLeyenda\\(l\\),",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EU03 la lista no pone la ayuda en el tooltip",
+    "archivo": "lib/catalogo/ui/pildora_de_leyenda.dart",
+    "patron": "conTooltip && ayuda != null",
+    "reemplazo": "false"
+  },
+  {
+    "nombre": "EU04 «Vencido» deja de ser rojo sólido",
+    "archivo": "lib/catalogo/ui/pildora_de_leyenda.dart",
+    "patron": "TonoLeyenda\\.vencido => \\(Colores\\.peligro, Colors\\.white\\)",
+    "reemplazo": "TonoLeyenda.vencido => (Colores.peligroSuave, Colores.peligro)"
+  },
+  {
+    "nombre": "EU05 el ámbar se pinta de verde",
+    "archivo": "lib/catalogo/ui/pildora_de_leyenda.dart",
+    "patron": "TonoLeyenda\\.aviso => \\(Colores\\.avisoSuave, Colores\\.aviso\\)",
+    "reemplazo": "TonoLeyenda.aviso => (Colores.exito, Colors.white)"
+  }
+]

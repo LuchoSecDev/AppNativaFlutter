@@ -1,3 +1,5 @@
+import 'estado_vencimiento.dart';
+
 /// Un producto del catálogo de la tienda (`GET /api/productos`, contrato [C1]).
 ///
 /// Solo se guardan los campos que la app usa. Un Tendero NO recibe el costo de compra ni la clasificación ABC
@@ -13,6 +15,8 @@ class Producto {
     required this.cantidad,
     required this.estado,
     required this.nivelStock,
+    this.estadoVencimiento,
+    this.sobrestock = false,
   });
 
   final int id;
@@ -39,10 +43,22 @@ class Producto {
   /// `agotado`, `critico`, `reponer` u `ok`.
   final String nivelStock;
 
+  /// Cuánto falta para que venza; `null` si no tiene fecha o faltan más de 30 días. Si el servidor no manda el campo
+  /// (una respuesta anterior al cambio del 13-oct-2026), también es `null`: todo sigue como antes.
+  final EstadoVencimiento? estadoVencimiento;
+
+  /// Tiene más de lo que vende (capital quieto). El servidor lo calcula; ausente = `false`.
+  final bool sobrestock;
+
   /// Un producto inactivo no se ofrece para vender.
   bool get estaDisponible => estado == 'Disponible';
 
   bool get agotado => cantidad <= 0;
+
+  /// Ya venció y todavía tiene unidades: el servidor se niega a venderlo (400 `PRODUCTO_VENCIDO`) y rechaza TODO el
+  /// carrito. Vencido sin unidades es un agotado; lo que vence hoy sí se vende.
+  bool get vencidoConUnidades =>
+      estadoVencimiento?.tipo == TipoVencimiento.vencido && cantidad > 0;
 
   factory Producto.desdeJson(Map<String, dynamic> json) {
     final barras = json['codigo_barras'];
@@ -58,6 +74,10 @@ class Producto {
       cantidad: (json['cantidad'] as num?)?.toInt() ?? 0,
       estado: json['estado'] as String? ?? 'Disponible',
       nivelStock: json['nivel_stock'] as String? ?? 'ok',
+      estadoVencimiento: EstadoVencimiento.desdeJson(
+        json['estado_vencimiento'],
+      ),
+      sobrestock: json['sobrestock'] == true,
     );
   }
 }
