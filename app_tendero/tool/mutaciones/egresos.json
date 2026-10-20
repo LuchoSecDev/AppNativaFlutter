@@ -106,5 +106,191 @@
     "archivo": "lib/api/clave_de_idempotencia.dart",
     "patron": "\\{8,100\\}",
     "reemplazo": "{8,101}"
+  },
+  {
+    "nombre": "EG19 el gasto NO se guarda en el celular antes de enviarlo",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "await _almacen\\.guardar\\(clave, egreso\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG20 el doble toque deja pasar un segundo envío (también en «enviando»)",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "\\(state\\.fase == FaseEgreso\\.libre \\|\\| state\\.fase == FaseEgreso\\.rechazado\\)",
+    "reemplazo": "true"
+  },
+  {
+    "nombre": "EG21 una respuesta de otra sesión NO se descarta",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "    _generacion\\+\\+;",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG22 un gasto que quedó a medias no se recupera al abrir",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "Future\\.microtask\\(_recuperarPendiente\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG23 el reintento genera una clave NUEVA en vez de la misma",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "await _enviar\\(_generacion, clave, egreso\\);",
+    "reemplazo": "await _enviar(_generacion, clave, EgresoPendiente(clave: ref.read(generadorDeClaveProvider)(), montoPesos: egreso.montoPesos, motivo: egreso.motivo, categoria: egreso.categoria));"
+  },
+  {
+    "nombre": "EG24 el motivo se envía sin recortar los espacios",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "motivo: motivo\\.trim\\(\\),",
+    "reemplazo": "motivo: motivo,"
+  },
+  {
+    "nombre": "EG25 tras registrar NO se borra lo guardado (un reinicio lo mostraría como sin confirmar)",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "(?<=EgresoRegistrado r,\\s{0,10}\\) async \\{[^}]{0,900}?)await _almacen\\.borrar\\(clave\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG26 tras un rechazo NO se refresca la caja",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "unawaited\\(ref\\.read\\(cajaProvider\\.notifier\\)\\.actualizar\\(\\)\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG27 tras un rechazo se refresca la caja con cargar() (parpadeo de «no hay caja»)",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "cajaProvider\\.notifier\\)\\.actualizar\\(\\)",
+    "reemplazo": "cajaProvider.notifier).cargar()"
+  },
+  {
+    "nombre": "EG28 el registro con éxito no limpia el borrador",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "ref\\.read\\(borradorDeEgresoProvider\\.notifier\\)\\.limpiar\\(\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG29 el reintento automático ignora las pausas",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "await ref\\.read\\(pausaDeReintentoProvider\\)\\(esperas\\[intento - 1\\]\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG30 se reintenta solo sin límite de veces",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "resultado\\.reintentoAutomatico && intento <= esperas\\.length",
+    "reemplazo": "resultado.reintentoAutomatico"
+  },
+  {
+    "nombre": "EG31 una respuesta tardía se acepta como resultado",
+    "archivo": "lib/egresos/egreso_notifier.dart",
+    "patron": "        final resultado = await _repo\\.registrar\\(egreso\\);\\s*if \\(_obsoleto\\(g\\)\\) return;",
+    "reemplazo": "        final resultado = await _repo.registrar(egreso);"
+  },
+  {
+    "nombre": "EG32 el motivo de 4 caracteres se acepta",
+    "archivo": "lib/egresos/egreso_reglas.dart",
+    "patron": ">= caracteresMinimosDelMotivo;",
+    "reemplazo": ">= caracteresMinimosDelMotivo - 1;"
+  },
+  {
+    "nombre": "EG33 el monto IGUAL al tope se rechaza",
+    "archivo": "lib/egresos/egreso_reglas.dart",
+    "patron": "montoPesos \\* 100 > tope",
+    "reemplazo": "montoPesos * 100 >= tope"
+  },
+  {
+    "nombre": "EG34 el Administrador también tiene tope",
+    "archivo": "lib/egresos/egreso_reglas.dart",
+    "patron": "if \\(rol != 'Tendero'\\) return null;",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG35 un tope en 0 bloquea todo gasto",
+    "archivo": "lib/egresos/egreso_reglas.dart",
+    "patron": "limite == null \\|\\| limite == 0 \\? null : limite",
+    "reemplazo": "limite"
+  },
+  {
+    "nombre": "EG36 el monto 0 se acepta",
+    "archivo": "lib/egresos/egreso_reglas.dart",
+    "patron": "if \\(montoPesos <= 0\\)",
+    "reemplazo": "if (montoPesos < 0)"
+  },
+  {
+    "nombre": "EG37 sin caja abierta se envía igual",
+    "archivo": "lib/egresos/egreso_reglas.dart",
+    "patron": "if \\(!cajaAbierta\\) \\{",
+    "reemplazo": "if (false) {"
+  },
+  {
+    "nombre": "EG38 el formulario permite más de 9 dígitos",
+    "archivo": "lib/egresos/ui/formulario_de_egreso.dart",
+    "patron": "LengthLimitingTextInputFormatter\\(_maximoDeDigitos\\),",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG39 el formulario admite letras en el monto",
+    "archivo": "lib/egresos/ui/formulario_de_egreso.dart",
+    "patron": "FilteringTextInputFormatter\\.digitsOnly,",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG40 el botón se habilita sin elegir categoría",
+    "archivo": "lib/egresos/ui/formulario_de_egreso.dart",
+    "patron": "\\s*borrador\\.categoria != null;",
+    "reemplazo": "\n        true;"
+  },
+  {
+    "nombre": "EG41 el botón se habilita con el monto sobre el tope",
+    "archivo": "lib/egresos/ui/formulario_de_egreso.dart",
+    "patron": "!superaElTope &&",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG42 el botón se habilita con un motivo corto",
+    "archivo": "lib/egresos/ui/formulario_de_egreso.dart",
+    "patron": "motivoEsValido\\(borrador\\.motivo\\) &&",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG43 el rechazo del servidor vibra suave en vez de fuerte",
+    "archivo": "lib/egresos/ui/formulario_de_egreso.dart",
+    "patron": "intensidad: Intensidad\\.fuerte,",
+    "reemplazo": "intensidad: Intensidad.suave,"
+  },
+  {
+    "nombre": "EG44 el comprobante no vibra",
+    "archivo": "lib/egresos/ui/comprobante_de_egreso.dart",
+    "patron": "return VibrarAlAparecer\\(\\s*intensidad: Intensidad\\.media,\\s*child: Center\\(",
+    "reemplazo": "return Center("
+  },
+  {
+    "nombre": "EG45 al salir de la pantalla no se cierra el resultado (el siguiente gasto vería el comprobante viejo)",
+    "archivo": "lib/egresos/ui/registrar_egreso_screen.dart",
+    "patron": "if \\(volvio\\) _cerrarResultado\\(ref\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG46 el borrador no se borra al cambiar de sesión",
+    "archivo": "lib/egresos/egreso_borrador.dart",
+    "patron": "    ref\\.watch\\(\\s*sesionProvider\\.select\\(\\(s\\) => \\(s\\.fase, s\\.info\\?\\.userId, s\\.info\\?\\.tiendaId\\)\\),\\s*\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "EG47 elegir un campo del borrador pisa a los demás",
+    "archivo": "lib/egresos/egreso_borrador.dart",
+    "patron": "motivo: motivo \\?\\? state\\.motivo,",
+    "reemplazo": "motivo: motivo ?? '',"
+  },
+  {
+    "nombre": "EG48 con un gasto sin confirmar se ofrece «registrar de nuevo»",
+    "archivo": "lib/egresos/ui/registrar_egreso_screen.dart",
+    "patron": "FaseEgreso\\.sinConfirmar => GastoSinConfirmar\\(estado: estado\\),",
+    "reemplazo": "FaseEgreso.sinConfirmar => const FormularioDeEgreso(),"
+  },
+  {
+    "nombre": "EG49 el botón de la tarjeta no avisa del gasto sin confirmar",
+    "archivo": "lib/egresos/ui/boton_registrar_gasto.dart",
+    "patron": "e\\.fase == FaseEgreso\\.sinConfirmar",
+    "reemplazo": "false"
   }
 ]

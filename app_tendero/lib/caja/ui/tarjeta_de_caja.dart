@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../egresos/ui/boton_registrar_gasto.dart';
 import '../../ui/colores.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
@@ -113,6 +114,8 @@ class TarjetaDeCaja extends ConsumerWidget {
                 CuadroDeMensaje(caja.mensaje!, esError: false),
               ],
               const SizedBox(height: 12),
+              const BotonRegistrarGasto(),
+              const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
