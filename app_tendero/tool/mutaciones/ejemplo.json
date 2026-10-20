@@ -7,7 +7,7 @@
   },
   {
     "nombre": "EJ02 el efectivo no se compara contra el total",
-    "archivo": "lib/venta/venta_providers.dart",
+    "archivo": "lib/venta/motivo_para_no_cobrar.dart",
     "patron": "efectivoRecibido \\* 100 < resumen\\.totalCentavos",
     "reemplazo": "false"
   }
