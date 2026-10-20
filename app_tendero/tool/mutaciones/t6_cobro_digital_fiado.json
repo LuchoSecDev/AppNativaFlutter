@@ -127,13 +127,13 @@
   },
   {
     "nombre": "T622 el fiado se puede confirmar aunque se pase del cupo",
-    "archivo": "lib/venta/ui/cobrar_fiado_screen.dart",
+    "archivo": "lib/venta/ui/fiado_confirmar.dart",
     "patron": "alPulsar: alcanza \\? alCobrar : null,",
     "reemplazo": "alPulsar: alCobrar,"
   },
   {
     "nombre": "T623 «Quedaría debiendo» olvida lo que ya debe",
-    "archivo": "lib/venta/ui/cobrar_fiado_screen.dart",
+    "archivo": "lib/venta/ui/fiado_confirmar.dart",
     "patron": "cliente\\.saldoPendienteCentavos \\+ total;",
     "reemplazo": "total;"
   },
@@ -151,7 +151,7 @@
   },
   {
     "nombre": "T626 el buscador de clientes no filtra",
-    "archivo": "lib/venta/ui/cobrar_fiado_screen.dart",
+    "archivo": "lib/venta/ui/fiado_elegir_cliente.dart",
     "patron": "consulta: controladorBusqueda\\.text,",
     "reemplazo": "consulta: '',"
   },
