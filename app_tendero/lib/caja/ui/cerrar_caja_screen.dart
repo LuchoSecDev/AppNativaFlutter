@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../ui/colores.dart';
-import '../../ui/retroalimentacion.dart';
-import '../../ui/dinero.dart';
-import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
-import '../caja_models.dart';
 import '../cierre_providers.dart';
+import 'cierre_sin_confirmar.dart';
+import 'comprobante_de_cierre.dart';
+import 'desglose_del_arqueo.dart';
+import 'desglose_por_metodo.dart';
+import 'tarjeta_de_diferencia.dart';
 
 /// Cerrar la caja en tres tiempos: 1) contar y escribir el total, 2) VER cuánto debería haber y la diferencia (y poder
 /// recontar) y 3) confirmar. El arqueo del paso 2 no cierra nada: solo el botón «Confirmar cierre» lo hace.
@@ -102,8 +103,8 @@ class _CerrarCajaScreenState extends ConsumerState<CerrarCajaScreen> {
                   FaseCierre.contando ||
                   FaseCierre.calculando => _paso1(cierre),
                   FaseCierre.revisando || FaseCierre.cerrando => _paso2(cierre),
-                  FaseCierre.cerrada => _Cerrada(cierre: cierre),
-                  FaseCierre.sinConfirmar => _SinConfirmar(cierre: cierre),
+                  FaseCierre.cerrada => ComprobanteDeCierre(cierre: cierre),
+                  FaseCierre.sinConfirmar => CierreSinConfirmar(cierre: cierre),
                 },
               ),
             ),
@@ -168,10 +169,10 @@ class _CerrarCajaScreenState extends ConsumerState<CerrarCajaScreen> {
           style: TextStyle(fontSize: 14, color: Colores.tinta),
         ),
         const SizedBox(height: 12),
-        _Desglose(arqueo: arqueo),
+        DesgloseDelArqueo(arqueo: arqueo),
         const SizedBox(height: 16),
-        _TarjetaDeDiferencia(arqueo: arqueo),
-        _DesglosePorMetodo(arqueo: arqueo),
+        TarjetaDeDiferencia(arqueo: arqueo),
+        DesglosePorMetodo(arqueo: arqueo),
         const SizedBox(height: 12),
         const Text(
           'Solo el efectivo entra al cajón: lo vendido con tarjeta, transferencia o fiado no se cuenta en lo que debería haber. Si se registra algo mientras revisas, el arqueo final puede cambiar.',
@@ -207,291 +208,6 @@ class _CerrarCajaScreenState extends ConsumerState<CerrarCajaScreen> {
           ],
         ),
       ],
-    );
-  }
-}
-
-/// De dónde sale lo que debería haber: fondo inicial, ventas, abonos y egresos, y el total contado.
-class _Desglose extends StatelessWidget {
-  const _Desglose({required this.arqueo});
-
-  final ArqueoCaja arqueo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Column(
-        children: [
-          _Renglon('Fondo inicial', arqueo.aperturaCentavos),
-          _Renglon('+ Ventas en efectivo', arqueo.ventasEfectivoCentavos),
-          _Renglon('+ Abonos en efectivo', arqueo.abonosEfectivoCentavos),
-          _Renglon('− Egresos (gastos)', arqueo.egresosCentavos),
-          const Divider(height: 20),
-          _Renglon('Debería haber', arqueo.esperadoCentavos, destacado: true),
-          _Renglon('Tú contaste', arqueo.declaradoCentavos, destacado: true),
-        ],
-      ),
-    );
-  }
-}
-
-class _Renglon extends StatelessWidget {
-  const _Renglon(this.etiqueta, this.centavos, {this.destacado = false});
-
-  final String etiqueta;
-  final int centavos;
-  final bool destacado;
-
-  @override
-  Widget build(BuildContext context) {
-    final estilo = TextStyle(
-      fontSize: destacado ? 16 : 14,
-      fontWeight: destacado ? FontWeight.w800 : FontWeight.w500,
-      color: Colores.tinta,
-    );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(etiqueta, style: estilo),
-          Text(formatoPesos(importeDeCentavos(centavos)), style: estilo),
-        ],
-      ),
-    );
-  }
-}
-
-/// «Cuadra», «Sobra» o «Falta», con su color.
-class _TarjetaDeDiferencia extends StatelessWidget {
-  const _TarjetaDeDiferencia({required this.arqueo});
-
-  final ArqueoCaja arqueo;
-
-  @override
-  Widget build(BuildContext context) {
-    final (fondo, color) = switch (arqueo.tipo) {
-      TipoDiferencia.cuadra => (const Color(0xFFDDF3E9), Colores.exito),
-      TipoDiferencia.sobra => (Colores.avisoSuave, Colores.aviso),
-      TipoDiferencia.falta => (Colores.peligroSuave, Colores.peligro),
-    };
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: fondo,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Text(
-            arqueo.tituloDeLaDiferencia,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            arqueo.detalleDeLaDiferencia,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// El comprobante: la caja quedó cerrada, con el arqueo final.
-class _Cerrada extends ConsumerWidget {
-  const _Cerrada({required this.cierre});
-
-  final EstadoCierre cierre;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final arqueo = cierre.arqueoFinal;
-    return VibrarAlAparecer(
-      intensidad: Intensidad.media,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Icon(Icons.lock, size: 56, color: Colores.exito),
-          const SizedBox(height: 8),
-          const Text(
-            'Caja cerrada',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Colores.tinta,
-            ),
-          ),
-          if (cierre.cambio) ...[
-            const SizedBox(height: 12),
-            const CuadroDeMensaje(
-              'Mientras revisabas se registró un movimiento: este es el arqueo FINAL, distinto al que viste.',
-              esError: false,
-            ),
-          ],
-          if (arqueo != null) ...[
-            const SizedBox(height: 16),
-            _Desglose(arqueo: arqueo),
-            const SizedBox(height: 16),
-            _TarjetaDeDiferencia(arqueo: arqueo),
-            _DesglosePorMetodo(arqueo: arqueo),
-          ],
-          if (cierre.mensaje != null) ...[
-            const SizedBox(height: 12),
-            CuadroDeMensaje(cierre.mensaje!, esError: false),
-          ],
-          const SizedBox(height: 24),
-          BotonPrincipal(
-            texto: 'Volver al inicio',
-            alPulsar: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// No se sabe si la caja se cerró: solo se puede comprobar, nunca cerrar otra vez.
-class _SinConfirmar extends ConsumerWidget {
-  const _SinConfirmar({required this.cierre});
-
-  final EstadoCierre cierre;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        CuadroDeMensaje(
-          cierre.mensaje ?? 'No sabemos si la caja se cerró. Toca «Comprobar»; no la cierres otra vez.',
-        ),
-        const SizedBox(height: 16),
-        BotonPrincipal(
-          texto: 'Comprobar',
-          alPulsar: () => ref.read(cierreProvider.notifier).comprobar(),
-        ),
-      ],
-    );
-  }
-}
-
-/// Lo vendido en el turno, separado por método de pago: es el desglose de auditoría. Solo el efectivo entra al cajón; el
-/// resto se muestra aparte, marcado, para que se vea que no se olvidó. No se dibuja si el servidor no lo envió.
-class _DesglosePorMetodo extends StatelessWidget {
-  const _DesglosePorMetodo({required this.arqueo});
-
-  final ArqueoCaja arqueo;
-
-  @override
-  Widget build(BuildContext context) {
-    if (arqueo.ventasPorMetodo.isEmpty && arqueo.abonosPorMetodo.isEmpty) {
-      return const SizedBox.shrink(); // un servidor anterior al desglose
-    }
-    final ventas = arqueo.ventasPorMetodo.where((m) => m.tieneMovimiento);
-    final abonos = arqueo.abonosPorMetodo.where((m) => m.tieneMovimiento);
-    return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Lo vendido en el turno, por método de pago',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: Colores.tinta,
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (ventas.isEmpty)
-            const Text(
-              'Sin ventas en este turno.',
-              style: TextStyle(fontSize: 13, color: Colores.tinta),
-            )
-          else
-            for (final m in ventas) _LineaDeMetodo(m, unidad: 'venta'),
-          if (abonos.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            const Text(
-              'Abonos de clientes',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Colores.tinta,
-              ),
-            ),
-            const SizedBox(height: 6),
-            for (final m in abonos) _LineaDeMetodo(m, unidad: 'abono'),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _LineaDeMetodo extends StatelessWidget {
-  const _LineaDeMetodo(this.movimiento, {required this.unidad});
-
-  final MovimientoPorMetodo movimiento;
-  final String unidad;
-
-  @override
-  Widget build(BuildContext context) {
-    final cantidad = movimiento.cantidad;
-    final detalle =
-        '$cantidad ${cantidad == 1 ? unidad : '${unidad}s'}${movimiento.entraAlCajon ? '' : ' · no entra al cajón'}';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: movimiento.etiqueta,
-                    style: const TextStyle(fontSize: 13, color: Colores.tinta),
-                  ),
-                  TextSpan(
-                    text: ' · $detalle',
-                    style: const TextStyle(fontSize: 11, color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Text(
-            formatoPesos(importeDeCentavos(movimiento.totalCentavos)),
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Colores.tinta,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
