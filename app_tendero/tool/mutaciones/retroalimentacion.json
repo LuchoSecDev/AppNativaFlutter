@@ -49,19 +49,19 @@
   },
   {
     "nombre": "RT09 el comprobante de la venta no vibra",
-    "archivo": "lib/carrito/ui/carrito_screen.dart",
+    "archivo": "lib/carrito/ui/venta_registrada.dart",
     "patron": "return VibrarAlAparecer\\(\\s*intensidad: Intensidad\\.media,\\s*child: Center\\(",
     "reemplazo": "return Center("
   },
   {
     "nombre": "RT10 un rechazo del servidor vibra suave en vez de fuerte",
-    "archivo": "lib/carrito/ui/carrito_screen.dart",
+    "archivo": "lib/carrito/ui/pie_del_carrito.dart",
     "patron": "intensidad: Intensidad\\.fuerte,\\s*child: CuadroDeMensaje\\(cobro\\.mensaje!\\),",
     "reemplazo": "intensidad: Intensidad.suave,\n                child: CuadroDeMensaje(cobro.mensaje!),"
   },
   {
     "nombre": "RT11 la venta sin confirmar no vibra",
-    "archivo": "lib/carrito/ui/carrito_screen.dart",
+    "archivo": "lib/carrito/ui/pie_del_carrito.dart",
     "patron": "VibrarAlAparecer\\(\\s*intensidad: Intensidad\\.media,\\s*child: CuadroDeMensaje\\(\\s*'\\$\\{cobro\\.mensaje \\?\\? 'No se pudo confirmar la venta\\.'\\}",
     "reemplazo": "Container(child: CuadroDeMensaje(\n                '${cobro.mensaje ?? 'No se pudo confirmar la venta.'}"
   },
