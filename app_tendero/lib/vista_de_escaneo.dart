@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'scan_stabilizer.dart';
+import 'ui/retroalimentacion.dart';
 
 /// Interruptor de la zona de lectura. `true`: el lector solo analiza lo que está dentro del recuadro.
 /// `false`: analiza toda la imagen de la cámara (el comportamiento anterior).
@@ -117,7 +117,7 @@ class _VistaDeEscaneoState extends State<VistaDeEscaneo>
 
     final confirmed = widget.estabilizador.leer(code, pausado: widget.pausado);
     if (confirmed != null) {
-      HapticFeedback.mediumImpact();
+      vibrar(Intensidad.media);
       widget.alConfirmar(confirmed);
     }
   }

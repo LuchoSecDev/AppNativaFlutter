@@ -9,6 +9,7 @@ import '../../ui/dinero.dart';
 import '../../ui/formato.dart';
 import '../../ui/piezas_de_pantalla.dart';
 import '../../ui/refrescar.dart';
+import '../../ui/retroalimentacion.dart';
 import '../../venta/ui/escaner_venta_screen.dart';
 import '../../venta/ui/selector_pago_screen.dart';
 import '../../venta/venta_providers.dart';
@@ -477,8 +478,11 @@ class _PieDelCarrito extends StatelessWidget {
           ),
           if (sinConfirmar) ...[
             const SizedBox(height: 12),
-            CuadroDeMensaje(
-              '${cobro.mensaje ?? 'No se pudo confirmar la venta.'} No la cobres otra vez: puede que ya esté registrada.',
+            VibrarAlAparecer(
+              intensidad: Intensidad.media,
+              child: CuadroDeMensaje(
+                '${cobro.mensaje ?? 'No se pudo confirmar la venta.'} No la cobres otra vez: puede que ya esté registrada.',
+              ),
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
@@ -494,7 +498,10 @@ class _PieDelCarrito extends StatelessWidget {
           ] else ...[
             if (cobro.fase == FaseCobro.rechazada && cobro.mensaje != null) ...[
               const SizedBox(height: 8),
-              CuadroDeMensaje(cobro.mensaje!),
+              VibrarAlAparecer(
+                intensidad: Intensidad.fuerte,
+                child: CuadroDeMensaje(cobro.mensaje!),
+              ),
             ],
             if (resumen.hayProblemas) ...[
               const SizedBox(height: 8),
@@ -578,60 +585,63 @@ class _VentaRegistrada extends StatelessWidget {
   Widget build(BuildContext context) {
     final venta = cobro.venta;
     final cambio = venta?.cambioCentavos;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(Icons.check_circle, size: 64, color: Colores.exito),
-            const SizedBox(height: 12),
-            const Text(
-              'Venta registrada',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Colores.tinta,
-              ),
-            ),
-            Text(
-              'Venta n.º ${cobro.idVenta}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Colores.tinta),
-            ),
-            if (cobro.repetida) ...[
+    return VibrarAlAparecer(
+      intensidad: Intensidad.media,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(Icons.check_circle, size: 64, color: Colores.exito),
               const SizedBox(height: 12),
-              const CuadroDeMensaje(
-                'Esta venta ya estaba registrada: se recuperó sin cobrarla otra vez.',
-                esError: false,
+              const Text(
+                'Venta registrada',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Colores.tinta,
+                ),
+              ),
+              Text(
+                'Venta n.º ${cobro.idVenta}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colores.tinta),
+              ),
+              if (cobro.repetida) ...[
+                const SizedBox(height: 12),
+                const CuadroDeMensaje(
+                  'Esta venta ya estaba registrada: se recuperó sin cobrarla otra vez.',
+                  esError: false,
+                ),
+              ],
+              if (venta != null) ...[
+                const SizedBox(height: 20),
+                _Renglon(
+                  'Total',
+                  formatoPesos(importeDeCentavos(venta.totalCentavos)),
+                ),
+                if (venta.efectivoRecibido != null)
+                  _Renglon(
+                    'Efectivo recibido',
+                    formatoPesosEnteros(venta.efectivoRecibido!),
+                  ),
+                if (cambio != null && cambio >= 0)
+                  _Renglon(
+                    'Cambio a devolver',
+                    formatoPesos(importeDeCentavos(cambio)),
+                    destacado: true,
+                  ),
+              ],
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: alTerminar,
+                child: const Text('Nueva venta'),
               ),
             ],
-            if (venta != null) ...[
-              const SizedBox(height: 20),
-              _Renglon(
-                'Total',
-                formatoPesos(importeDeCentavos(venta.totalCentavos)),
-              ),
-              if (venta.efectivoRecibido != null)
-                _Renglon(
-                  'Efectivo recibido',
-                  formatoPesosEnteros(venta.efectivoRecibido!),
-                ),
-              if (cambio != null && cambio >= 0)
-                _Renglon(
-                  'Cambio a devolver',
-                  formatoPesos(importeDeCentavos(cambio)),
-                  destacado: true,
-                ),
-            ],
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: alTerminar,
-              child: const Text('Nueva venta'),
-            ),
-          ],
+          ),
         ),
       ),
     );
