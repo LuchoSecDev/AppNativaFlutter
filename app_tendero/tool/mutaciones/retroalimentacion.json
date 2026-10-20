@@ -1,0 +1,74 @@
+[
+  {
+    "nombre": "RT01 la intensidad suave pide la vibración fuerte",
+    "archivo": "lib/ui/retroalimentacion.dart",
+    "patron": "HapticFeedback\\.lightImpact\\(\\);",
+    "reemplazo": "HapticFeedback.heavyImpact();"
+  },
+  {
+    "nombre": "RT02 la intensidad fuerte pide la vibración suave",
+    "archivo": "lib/ui/retroalimentacion.dart",
+    "patron": "HapticFeedback\\.heavyImpact\\(\\);",
+    "reemplazo": "HapticFeedback.lightImpact();"
+  },
+  {
+    "nombre": "RT03 la intensidad media no vibra",
+    "archivo": "lib/ui/retroalimentacion.dart",
+    "patron": "HapticFeedback\\.mediumImpact\\(\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "RT04 vibrar al aparecer vibra otra vez en cada redibujado",
+    "archivo": "lib/ui/retroalimentacion.dart",
+    "patron": "  @override\\s*Widget build\\(BuildContext context\\) => widget\\.child;",
+    "reemplazo": "  @override\n  Widget build(BuildContext context) {\n    vibrar(widget.intensidad);\n    return widget.child;\n  }"
+  },
+  {
+    "nombre": "RT05 vibrar al aparecer no vibra",
+    "archivo": "lib/ui/retroalimentacion.dart",
+    "patron": "    super\\.initState\\(\\);\\s*vibrar\\(widget\\.intensidad\\);",
+    "reemplazo": "    super.initState();"
+  },
+  {
+    "nombre": "RT06 los avisos dejan de vibrar",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "  vibrar\\(tipo\\.intensidad\\);\\s*",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "RT07 el error se avisa con una vibración suave",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "Duration\\(milliseconds: 3500\\),\\s*Intensidad\\.fuerte,",
+    "reemplazo": "Duration(milliseconds: 3500),\n    Intensidad.suave,"
+  },
+  {
+    "nombre": "RT08 el éxito se avisa con una vibración fuerte",
+    "archivo": "lib/ui/avisos.dart",
+    "patron": "Duration\\(seconds: 2\\),\\s*Intensidad\\.suave,",
+    "reemplazo": "Duration(seconds: 2),\n    Intensidad.fuerte,"
+  },
+  {
+    "nombre": "RT09 el comprobante de la venta no vibra",
+    "archivo": "lib/carrito/ui/carrito_screen.dart",
+    "patron": "return VibrarAlAparecer\\(\\s*intensidad: Intensidad\\.media,\\s*child: Center\\(",
+    "reemplazo": "return Center("
+  },
+  {
+    "nombre": "RT10 un rechazo del servidor vibra suave en vez de fuerte",
+    "archivo": "lib/carrito/ui/carrito_screen.dart",
+    "patron": "intensidad: Intensidad\\.fuerte,\\s*child: CuadroDeMensaje\\(cobro\\.mensaje!\\),",
+    "reemplazo": "intensidad: Intensidad.suave,\n                child: CuadroDeMensaje(cobro.mensaje!),"
+  },
+  {
+    "nombre": "RT11 la venta sin confirmar no vibra",
+    "archivo": "lib/carrito/ui/carrito_screen.dart",
+    "patron": "VibrarAlAparecer\\(\\s*intensidad: Intensidad\\.media,\\s*child: CuadroDeMensaje\\(\\s*'\\$\\{cobro\\.mensaje \\?\\? 'No se pudo confirmar la venta\\.'\\}",
+    "reemplazo": "Container(child: CuadroDeMensaje(\n                '${cobro.mensaje ?? 'No se pudo confirmar la venta.'}"
+  },
+  {
+    "nombre": "RT12 el comprobante de la caja cerrada no vibra",
+    "archivo": "lib/caja/ui/cerrar_caja_screen.dart",
+    "patron": "return VibrarAlAparecer\\(\\s*intensidad: Intensidad\\.media,\\s*child: Column\\(\\s*crossAxisAlignment: CrossAxisAlignment\\.stretch,\\s*children: \\[\\s*const Icon\\(Icons\\.lock",
+    "reemplazo": "return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const Icon(Icons.lock"
+  }
+]

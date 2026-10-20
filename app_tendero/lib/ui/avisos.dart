@@ -1,25 +1,40 @@
 import 'package:flutter/material.dart';
 
 import 'colores.dart';
+import 'retroalimentacion.dart';
 
 /// Qué clase de noticia es un aviso: decide su color, su ícono y cuánto dura.
 ///
 /// Lo bueno se lee de un vistazo y se va pronto (2 s). Lo que el Tendero necesita leer con calma —un rechazo o algo que
 /// quedó a medias— dura más (3,5 s). En los dos casos se puede cerrar tocándolo.
 enum TipoAviso {
-  exito(Colores.exito, Icons.check_circle_rounded, Duration(seconds: 2)),
+  exito(
+    Colores.exito,
+    Icons.check_circle_rounded,
+    Duration(seconds: 2),
+    Intensidad.suave,
+  ),
   aviso(
     Colores.aviso,
     Icons.warning_amber_rounded,
     Duration(milliseconds: 3500),
+    Intensidad.media,
   ),
-  error(Colores.peligro, Icons.error_rounded, Duration(milliseconds: 3500));
+  error(
+    Colores.peligro,
+    Icons.error_rounded,
+    Duration(milliseconds: 3500),
+    Intensidad.fuerte,
+  );
 
-  const TipoAviso(this.color, this.icono, this.duracion);
+  const TipoAviso(this.color, this.icono, this.duracion, this.intensidad);
 
   final Color color;
   final IconData icono;
   final Duration duracion;
+
+  /// Cuánto vibra el celular al mostrarse: lo bueno, suave; lo que hay que leer, más fuerte.
+  final Intensidad intensidad;
 }
 
 /// Muestra un aviso flotante y redondeado, con ícono, que reemplaza al anterior (no se acumulan en cola).
@@ -33,6 +48,7 @@ void mostrarAviso(
   required TipoAviso tipo,
 }) {
   final mensajes = ScaffoldMessenger.of(context);
+  vibrar(tipo.intensidad);
   mensajes
     ..clearSnackBars()
     ..showSnackBar(
