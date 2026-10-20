@@ -2,15 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/reintentos_providers.dart';
 import '../auth/auth_providers.dart';
 import '../auth/session_state.dart';
 import '../caja/caja_providers.dart';
-// Las tres piezas son genéricas (clave, esperas y pausa de reintento); viven en venta/ solo por historia.
-import '../venta/venta_providers.dart'
-    show
-        esperasDeReintentoProvider,
-        generadorDeClaveProvider,
-        pausaDeReintentoProvider;
 import 'almacen_egreso.dart';
 import 'egreso_borrador.dart';
 import 'egreso_dependencias.dart';

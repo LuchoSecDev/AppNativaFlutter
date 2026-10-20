@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stockpilot/venta/clave_de_venta.dart';
+import 'package:stockpilot/api/clave_de_idempotencia.dart';
 import 'package:stockpilot/venta/venta_models.dart';
 
 void main() {
