@@ -107,20 +107,24 @@ class CatalogoFijo extends CatalogoNotifier {
   void poner(EstadoCatalogo nuevo) => state = nuevo;
 }
 
-EstadoSesion sesionActiva({int userId = 2, int tiendaId = 1}) =>
-    EstadoSesion.activa(
-      InfoSesion(
-        userId: userId,
-        tiendaId: tiendaId,
-        tiendaNombre: 'Tienda La Esperanza',
-        limiteEgresoTendero: '150000.00',
-        rol: 'Tendero',
-        nombres: 'Carlos Pérez',
-        is2FAEnabled: false,
-        cambioClaveForzoso: false,
-        needs2FASetup: false,
-      ),
-    );
+EstadoSesion sesionActiva({
+  int userId = 2,
+  int tiendaId = 1,
+  String rol = 'Tendero',
+  String limiteEgreso = '150000.00',
+}) => EstadoSesion.activa(
+  InfoSesion(
+    userId: userId,
+    tiendaId: tiendaId,
+    tiendaNombre: 'Tienda La Esperanza',
+    limiteEgresoTendero: limiteEgreso,
+    rol: rol,
+    nombres: 'Carlos Pérez',
+    is2FAEnabled: false,
+    cambioClaveForzoso: false,
+    needs2FASetup: false,
+  ),
+);
 
 Producto producto(
   int id,
