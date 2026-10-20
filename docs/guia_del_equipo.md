@@ -111,6 +111,8 @@ Cada función sigue **las mismas cinco capas**; cópiate de `lib/caja/` (la más
 
 **Lo que tiene T6 y que ya puedes reutilizar:** `lib/clientes/` (lista de clientes de `[V1]`, con el dinero en centavos), `lib/venta/ui/piezas_de_cobro.dart` (los tres estados «verificando precios», «no se pudo verificar» y «el carrito cambió») y el ejemplo `test/fixtures/api/16_V1_clientes.json`. Las pruebas de pantalla de cobro (`test/venta/ui/cobro_pantallas_test.dart`) ya traen los casos de tarjeta, transferencia y fiado como modelo.
 
+**Mejoras futuras (NO son parte de T1 a T7: no las tomes ni las empieces):** en `docs/planes/` hay dos propuestas para después, `propuesta_cartilla_de_codigos.md` (imprimir una cartilla de códigos de barras) y `propuesta_imagenes_almacenamiento_de_objetos.md` (imágenes de productos y fotos en almacenamiento en la nube). Están sin aprobar y con decisiones de Lucho pendientes. **T1 sigue exactamente como dice el tablero** (foto opcional en base64, menos de ~700 KB); si algo de esas propuestas cambia una tarea, Lucho lo avisa aquí.
+
 ## 6. Comprobar que tus pruebas valen (mutaciones)
 Un `flutter test` en verde no basta: hay que demostrar que las pruebas **fallan cuando el código está mal**.
 1. Escribe `tool/mutaciones/<tu_tarea>.json` con una entrada por cada regla importante (ver `tool/mutaciones/ejemplo.json`). Cada una dice qué texto del código romper y por qué.
