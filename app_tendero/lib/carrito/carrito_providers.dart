@@ -66,6 +66,8 @@ LineaDetallada _detallar(
   final ProblemaLinea problema;
   if (!producto.estaDisponible) {
     problema = ProblemaLinea.inactivo;
+  } else if (producto.vencidoConUnidades) {
+    problema = ProblemaLinea.vencido;
   } else if (precio == null || precio <= 0) {
     problema = ProblemaLinea.sinPrecio;
   } else if (linea.cantidad > producto.cantidad) {
@@ -141,8 +143,8 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
 
   // ───────────────────────── acciones ─────────────────────────
 
-  /// Agrega UNA unidad del [producto]. Las reglas viven aquí, en un solo lugar: no se vende lo agotado, lo inactivo ni
-  /// lo que no tiene precio, ni se pasa de las unidades en stock.
+  /// Agrega UNA unidad del [producto]. Las reglas viven aquí, en un solo lugar: no se vende lo agotado, lo inactivo, lo
+  /// vencido (con unidades) ni lo que no tiene precio, ni se pasa de las unidades en stock.
   ResultadoAgregar agregar(Producto producto) {
     if (state.cargando || _clave == null) {
       return ResultadoAgregar.cargando;
@@ -152,6 +154,9 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
     }
     if (!producto.estaDisponible) {
       return ResultadoAgregar.noDisponible;
+    }
+    if (producto.vencidoConUnidades) {
+      return ResultadoAgregar.vencido;
     }
     if (producto.agotado) {
       return ResultadoAgregar.agotado;
@@ -192,6 +197,9 @@ class CarritoNotifier extends Notifier<EstadoCarrito> {
       return ResultadoAgregar.cargando;
     }
     final producto = _productoDelCatalogo(idProducto);
+    if (producto != null && producto.vencidoConUnidades) {
+      return ResultadoAgregar.vencido;
+    }
     if (producto != null && lineas[i].cantidad >= producto.cantidad) {
       return ResultadoAgregar.limiteDeStock;
     }

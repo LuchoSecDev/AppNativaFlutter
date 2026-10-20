@@ -57,6 +57,9 @@ enum ProblemaLinea {
   /// El producto fue desactivado.
   inactivo,
 
+  /// El producto ya venció y tiene unidades: el servidor rechazaría TODO el carrito (400 `PRODUCTO_VENCIDO`).
+  vencido,
+
   /// Hay menos unidades en stock que las del carrito.
   sinStockSuficiente,
 
@@ -99,6 +102,8 @@ class LineaDetallada {
     ProblemaLinea.noEstaEnElCatalogo =>
       'Este producto ya no está en el catálogo.',
     ProblemaLinea.inactivo => 'Este producto está inactivo.',
+    ProblemaLinea.vencido =>
+      'Este producto está vencido y no se puede vender. Quítalo del carrito.',
     ProblemaLinea.sinStockSuficiente =>
       'Solo hay ${producto?.cantidad ?? 0} ${producto?.cantidad == 1 ? 'unidad' : 'unidades'} en stock.',
     ProblemaLinea.sinPrecio =>
@@ -132,6 +137,9 @@ enum ResultadoAgregar {
   agregado,
   agotado,
   noDisponible,
+
+  /// Ya venció y tiene unidades: no se vende (lo que vence hoy sí).
+  vencido,
   sinPrecio,
 
   /// Ya hay en el carrito todas las unidades que hay en stock.
@@ -150,6 +158,8 @@ String? mensajeDeAgregar(ResultadoAgregar r, Producto p) => switch (r) {
   ResultadoAgregar.agregado => null,
   ResultadoAgregar.agotado => '«${p.nombre}» está agotado.',
   ResultadoAgregar.noDisponible => '«${p.nombre}» está inactivo.',
+  ResultadoAgregar.vencido =>
+    '«${p.nombre}» está vencido y no se puede vender.',
   ResultadoAgregar.sinPrecio =>
     '«${p.nombre}» no tiene precio. Pide al administrador que se lo asigne.',
   ResultadoAgregar.limiteDeStock =>
