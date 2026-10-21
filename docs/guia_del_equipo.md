@@ -74,7 +74,7 @@ Cada función sigue **las mismas cinco capas**; cópiate de `lib/caja/` (la más
 2. **Modelos y repositorio**, con su prueba contra el fixture (`RespuestaFalsa.deEjemplo('NN_ID_...')`, ver `test/support/fake_adapter.dart`). Cubre: éxito, cada 400/404/403 del contrato, sin red, 500 y una respuesta con forma rara.
 3. **Estado (`Notifier`)** con su prueba: flujo feliz, cada falla, doble toque, respuesta tardía de otra sesión.
 4. **Pantalla** con su prueba de widgets. El cliente HTTP es el real y el servidor es el falso.
-5. **Mutaciones** (sección 6): rompe a propósito cada regla importante y comprueba que alguna prueba falla.
+5. **Mutaciones** (sección 6): las que pide el nivel de riesgo de tu función; rompe a propósito esas reglas y comprueba que alguna prueba falla.
 6. **Prueba de celular:** agrega a `docs/pruebas_sesion.md` una lista de lo que solo se ve con un teléfono real (la cámara, la señal, el teclado) y **dilo en tu PR**.
 7. `flutter analyze` limpio y `flutter test` en verde. Después, el PR.
 
@@ -114,9 +114,21 @@ Cada función sigue **las mismas cinco capas**; cópiate de `lib/caja/` (la más
 
 **Mejoras futuras (NO son parte de T1 a T7: no las tomes ni las empieces):** en `docs/planes/` hay dos propuestas para después, `propuesta_cartilla_de_codigos.md` (imprimir una cartilla de códigos de barras) y `propuesta_imagenes_almacenamiento_de_objetos.md` (imágenes de productos y fotos en almacenamiento en la nube). Están sin aprobar y con decisiones de Lucho pendientes. **T1 sigue exactamente como dice el tablero** (foto opcional en base64, menos de ~700 KB); si algo de esas propuestas cambia una tarea, Lucho lo avisa aquí.
 
-## 6. Comprobar que tus pruebas valen (mutaciones)
-Un `flutter test` en verde no basta: hay que demostrar que las pruebas **fallan cuando el código está mal**.
-1. Escribe `tool/mutaciones/<tu_tarea>.json` con una entrada por cada regla importante (ver `tool/mutaciones/ejemplo.json`). Cada una dice qué texto del código romper y por qué.
+## 6. Cuántas pruebas pedir y cómo comprobar que valen (mutaciones)
+Un `flutter test` en verde no basta cuando hay dinero o datos en juego: hay que demostrar que las pruebas **fallan cuando el código está mal**. Pero no todo merece el mismo esfuerzo (una mutación tarda unos 35 s y las pruebas repetidas en cada capa suben mucho las líneas), así que el rigor depende del **riesgo**:
+
+| Nivel | Qué toca | Qué pedir |
+|---|---|---|
+| **Alto** | dinero, idempotencia, sesión, permisos, contrato de la API | ejemplos reales, pruebas por capa (sección 4) y mutaciones de **cada** regla importante |
+| **Medio** | modelos y reglas de presentación (leyendas, filtros, validaciones de pantalla) | ejemplos reales, pruebas de la función pura y de **un** flujo de pantalla; mutaciones solo de las reglas centrales (unas 5) |
+| **Bajo** | avisos, textos, lectura que nunca bloquea | **un** ejemplo real y **una** prueba del flujo completo (éxito, fallo y fallo abierto); sin mutaciones |
+
+- **Siempre**, sea cual sea el nivel: el ejemplo real del servidor (nunca inventes la forma de una respuesta) y `flutter test` en verde.
+- Eliges el nivel al abrir el PR y **lo escribes en la descripción**; Lucho lo revisa. En la duda, sube un nivel.
+- Cómo gastar menos sin perder cobertura: una prueba con **tabla de casos** en vez de una por combinación; el montaje repetido en `test/support/`; y mutaciones solo de las reglas críticas, corridas antes de pedir la mezcla y no en cada cambio.
+
+Cómo correr las mutaciones (niveles alto y medio):
+1. Escribe `tool/mutaciones/<tu_tarea>.json` con una entrada por cada regla que le toque a tu nivel (ver `tool/mutaciones/ejemplo.json`). Cada una dice qué texto del código romper y por qué.
 2. Con todo guardado y commiteado: `dart run tool/mutar.dart tool/mutaciones/<tu_tarea>.json`.
 3. Cada línea del resumen debe decir **DETECTADA**. Si dice **SOBREVIVIÓ**, falta una prueba: escríbela y repite. **NO COMPILA** o **PATRÓN NO ENCONTRADO** significan que la mutación está mal escrita.
 4. La herramienta restaura el código sola; si la cortas a la mitad, `git checkout -- <archivo>`.
@@ -158,7 +170,7 @@ Dale `AGENTS.md` y `.agents/rules/`. Las reglas de arriba valen igual para él: 
 - [ ] Mi rama sale de `main` y tiene **una sola tarea**.
 - [ ] Hay fixtures **reales** copiados del backend (o, si no existen, creados desde el contrato y marcados).
 - [ ] `flutter analyze` sin avisos y `flutter test` en verde (escribe cuántas pruebas hay).
-- [ ] Corrí las mutaciones y todas están **DETECTADAS**.
+- [ ] Escribí en el PR el **nivel de riesgo** de mi función (alto, medio o bajo) y corrí las mutaciones que pide; todas están **DETECTADAS**.
 - [ ] Agregué mi lista de pruebas de celular a `docs/pruebas_sesion.md` y dije qué **no pude** probar.
 - [ ] `git diff origin/main` sin secretos, sin archivos generados ni de depuración, y `dart format` solo sobre lo mío.
 - [ ] No toqué el contrato ni lo de la sección 8 sin avisar.
