@@ -7,45 +7,45 @@
   },
   {
     "nombre": "EG02 un 200 sin id_egreso se da por registrado",
-    "archivo": "lib/egresos/egreso_repository.dart",
-    "patron": "cuerpo\\['success'\\] == true &&\\s*cuerpo\\['id_egreso'\\] is int\\)",
+    "archivo": "lib/api/escritura_idempotente.dart",
+    "patron": "cuerpo\\['success'\\] == true &&\\s*cuerpo\\[campoId\\] is int\\)",
     "reemplazo": "cuerpo['success'] == true)"
   },
   {
     "nombre": "EG03 un 200 con success false se da por registrado",
-    "archivo": "lib/egresos/egreso_repository.dart",
+    "archivo": "lib/api/escritura_idempotente.dart",
     "patron": "cuerpo\\['success'\\] == true &&",
     "reemplazo": ""
   },
   {
     "nombre": "EG04 el reintento ya registrado no se marca como repetido",
-    "archivo": "lib/egresos/egreso_repository.dart",
-    "patron": "repetido: r\\.headers\\.value\\('idempotent-replayed'\\) == 'true',",
-    "reemplazo": "repetido: false,"
+    "archivo": "lib/api/escritura_idempotente.dart",
+    "patron": "repetida: r\\.headers\\.value\\('idempotent-replayed'\\) == 'true',",
+    "reemplazo": "repetida: false,"
   },
   {
     "nombre": "EG05 una sesión caducada no se marca como tal",
-    "archivo": "lib/egresos/egreso_repository.dart",
+    "archivo": "lib/api/escritura_idempotente.dart",
     "patron": "sesionCaducada: true,",
     "reemplazo": "sesionCaducada: false,"
   },
   {
     "nombre": "EG06 una sesión caducada se reintenta sola",
-    "archivo": "lib/egresos/egreso_repository.dart",
+    "archivo": "lib/api/escritura_idempotente.dart",
     "patron": "reintentoAutomatico: false,\\s*sesionCaducada: true,",
-    "reemplazo": "reintentoAutomatico: true,\n        sesionCaducada: true,"
+    "reemplazo": "reintentoAutomatico: true,\n      sesionCaducada: true,"
   },
   {
     "nombre": "EG07 un 500 se toma como rechazo (se pierde que pudo registrarse)",
-    "archivo": "lib/egresos/egreso_repository.dart",
+    "archivo": "lib/api/escritura_idempotente.dart",
     "patron": "estado >= 500",
     "reemplazo": "estado > 599"
   },
   {
     "nombre": "EG08 un 429 se reintenta solo",
-    "archivo": "lib/egresos/egreso_repository.dart",
+    "archivo": "lib/api/escritura_idempotente.dart",
     "patron": "Demasiadas peticiones\\. Espera un momento y reintenta\\.',\\s*reintentoAutomatico: false,",
-    "reemplazo": "Demasiadas peticiones. Espera un momento y reintenta.',\n        reintentoAutomatico: true,"
+    "reemplazo": "Demasiadas peticiones. Espera un momento y reintenta.',\n      reintentoAutomatico: true,"
   },
   {
     "nombre": "EG09 el 422 por clave reutilizada no se reconoce",
