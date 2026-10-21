@@ -99,17 +99,32 @@ void main() {
     },
   });
 
+  /// Corre [accion] anotando los errores que Flutter recibe, y vuelve a poner el manejador de siempre ANTES de devolver
+  /// el control: si las aserciones de la prueba corrieran con el manejador cambiado, un fallo quedaría tragado y la
+  /// prueba se colgaría en vez de fallar.
+  Future<List<FlutterErrorDetails>> capturandoErrores(
+    Future<void> Function() accion,
+  ) async {
+    final reportados = <FlutterErrorDetails>[];
+    final anterior = FlutterError.onError;
+    FlutterError.onError = reportados.add;
+    try {
+      await accion();
+    } finally {
+      FlutterError.onError = anterior;
+    }
+    return reportados;
+  }
+
   testWidgets(
     'un producto con un campo de otro tipo: avisa, no agrega, sigue escaneando y reporta el error a Flutter',
     (tester) async {
-      final reportados = <FlutterErrorDetails>[];
-      final anterior = FlutterError.onError;
-      FlutterError.onError = reportados.add;
-      addTearDown(() => FlutterError.onError = anterior);
-
-      final c = await abrir(tester, productoConCampoRaro());
-      await tester.tap(find.text('Leer'));
-      await tester.pumpAndSettle();
+      late ProviderContainer c;
+      final reportados = await capturandoErrores(() async {
+        c = await abrir(tester, productoConCampoRaro());
+        await tester.tap(find.text('Leer'));
+        await tester.pumpAndSettle();
+      });
 
       expect(c.read(carritoProvider).lineas, isEmpty);
       expect(
@@ -124,14 +139,14 @@ void main() {
   testWidgets('tras ese error se puede volver a leer el mismo código', (
     tester,
   ) async {
-    FlutterError.onError = (_) {};
-    addTearDown(() => FlutterError.onError = FlutterError.presentError);
-
-    await abrir(tester, productoConCampoRaro());
-    await tester.tap(find.text('Leer'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Leer'));
-    await tester.pumpAndSettle();
+    final reportados = await capturandoErrores(() async {
+      await abrir(tester, productoConCampoRaro());
+      await tester.tap(find.text('Leer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Leer'));
+      await tester.pumpAndSettle();
+    });
     expect(find.text('ESCANEANDO'), findsOneWidget);
+    expect(reportados, hasLength(2), reason: 'cada lectura fallida se reporta');
   });
 }
