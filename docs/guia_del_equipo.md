@@ -68,6 +68,7 @@ Cada función sigue **las mismas cinco capas**; cópiate de `lib/caja/` (la más
 - **No perder el carrito** si falla la red o caduca la sesión. Un 401 vuelve al login sin perder lo que la persona estaba haciendo.
 - Textos de pantalla y **comentarios en español**; los comentarios explican el **porqué**, no repiten el código.
 - No reformatees archivos ajenos: ejecuta `dart format` **solo sobre los archivos que tocaste**.
+- **Archivos pequeños y capas, comprobados por una prueba** (`test/arquitectura/arquitectura_test.dart`): un archivo de `lib/` no pasa de 300 líneas ni uno de `test/` de 400, y ningún widget (carpetas `ui/` y las pantallas sueltas) importa un repositorio, `dio`, el cliente de la API ni `shared_preferences`. Hay una lista corta de deuda conocida que no puede crecer; si partes un archivo de esa lista, bórralo de ella. Si la prueba falla, parte el archivo o mueve la llamada al `Notifier`; no subas el límite.
 
 ## 4. La receta de una función nueva
 1. **Contrato.** Lee el endpoint en el contrato y **copia su ejemplo real** de `docs/ejemplos_app_tendero/` del backend a `test/fixtures/api/`. **Nunca inventes la forma de una respuesta**: una vez se inventó una clave y todo pasaba en verde mientras la función no servía.
