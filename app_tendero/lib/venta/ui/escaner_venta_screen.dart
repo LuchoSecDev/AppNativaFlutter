@@ -100,6 +100,26 @@ class _EscanerVentaScreenState extends ConsumerState<EscanerVentaScreen> {
       _reanudar(
         reiniciar: true,
       ); // tras un error se puede reintentar el mismo código al instante
+    } catch (e, pila) {
+      // Algo que no es un error de red ni del servidor (por ejemplo, un producto con un campo de otro tipo): sin esto el
+      // escáner se quedaba pausado para siempre y sin decir nada. Se avisa, se sigue escaneando y el error se reporta a
+      // Flutter (consola hoy; cualquier registro de errores que se agregue mañana) en vez de tragarlo.
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: e,
+          stack: pila,
+          library: 'escáner de venta',
+          context: ErrorDescription('al buscar un producto por su código'),
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      _avisar(
+        'No se pudo leer ese producto. Inténtalo de nuevo.',
+        tipo: TipoAviso.error,
+      );
+      _reanudar(reiniciar: true);
     }
   }
 

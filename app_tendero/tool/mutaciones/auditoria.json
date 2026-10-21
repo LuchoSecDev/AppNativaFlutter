@@ -1,0 +1,20 @@
+[
+  {
+    "nombre": "AU01 el escáner vuelve a atrapar solo los errores de la API (se congela con cualquier otro)",
+    "archivo": "lib/venta/ui/escaner_venta_screen.dart",
+    "patron": "\\} catch \\(e, pila\\) \\{",
+    "reemplazo": "} on StateError catch (e, pila) {"
+  },
+  {
+    "nombre": "AU02 el escáner no avisa cuando no pudo leer el producto",
+    "archivo": "lib/venta/ui/escaner_venta_screen.dart",
+    "patron": "_avisar\\(\\s*'No se pudo leer ese producto\\. Inténtalo de nuevo\\.',\\s*tipo: TipoAviso\\.error,\\s*\\);",
+    "reemplazo": ""
+  },
+  {
+    "nombre": "AU03 el escáner traga el error inesperado sin reportarlo a Flutter",
+    "archivo": "lib/venta/ui/escaner_venta_screen.dart",
+    "patron": "FlutterError\\.reportError\\(",
+    "reemplazo": "((FlutterErrorDetails d) {})("
+  }
+]
